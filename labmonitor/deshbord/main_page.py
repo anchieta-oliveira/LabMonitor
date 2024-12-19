@@ -2,19 +2,25 @@ import sys
 sys.path.append(sys.argv[1])
 import pandas as pd
 import streamlit as st
-from labmonitor.connection import Connection
 from labmonitor.data import Data
 from labmonitor.monitor import Monitor
+from labmonitor.connection import Connection
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def run(ip, username, password):
-    results = {}
-    c = Connection(ip, username, password)
-    m = Monitor(c)
-    results.update(m.get_usage_cpu())
-    results.update(m.get_usage_gpu())
-    results.update(m.get_usage_ram())
-    results.update(m.get_usage_disk())
-    return results
+def run(ip, name, user, pw):
+    try:
+        print(f"Conectando a {ip}...")
+        results = {}
+        c = Connection(ip, user, pw)
+        m = Monitor(c)
+        results.update(m.get_usage_cpu())
+        results.update(m.get_usage_gpu())
+        results.update(m.get_usage_ram())
+        results.update(m.get_usage_disk())
+        return name, results
+    except Exception as e:
+        print(f"Erro ao conectar a {ip}: {e}")
+        return name, None
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
 
@@ -25,14 +31,17 @@ passwords = data.machines['password'].to_list()
 print(data.machines)
 
 results = {}
-for ip, name, user, pw in zip(ips, names, usernames, passwords):
-    print(f"Conectando a {ip}...")
-    try:
-        results[name] = run(ip, user, pw)
-    except Exception as e:
-        print(f"Erro: {e}")
+
+with ThreadPoolExecutor(max_workers=len(ips)) as executor:
+    futures = [
+        executor.submit(run, ip, name, user, pw)
+        for ip, name, user, pw in zip(ips, names, usernames, passwords)
+    ]
+    for future in as_completed(futures):
+        name, stats = future.result()
+        if stats:
+            results[name] = stats
         
-print(results)
 cpu_ram_data = []
 for name, stats in results.items():
     row = {
@@ -44,7 +53,7 @@ for name, stats in results.items():
     cpu_ram_data.append(row)
 
 cpu_ram_df = pd.DataFrame(cpu_ram_data)
-# Tabela para GPU
+
 gpu_data = []
 for name, stats in results.items():
     for gpu in stats["gpu_info"]:
