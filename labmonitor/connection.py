@@ -18,7 +18,7 @@ class Connection:
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.ip, username=self.username, password=self.password, timeout=10)
+            ssh.connect(self.ip, username=self.username, password=self.password, timeout=10, look_for_keys=False, allow_agent=False)
             self.ssh = ssh
         except Exception as e:
             raise RuntimeError(f"Erro na conexão: {e}")
