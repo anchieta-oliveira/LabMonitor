@@ -20,7 +20,7 @@ class Monitor:
                 "memory_total": float(mem_total) / 1024,
                 "utilization_gpu": gpu_util
             })
-        return gpu_info
+        return {"gpu_info": gpu_info}
 
     def get_usage_ram(self):
         ram_command = "top -bn1 -E g| grep 'Mem' | awk '{print $8, $4+$6}'"
