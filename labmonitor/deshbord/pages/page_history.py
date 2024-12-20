@@ -12,7 +12,7 @@ df = pd.read_excel(f"{os.path.dirname(os.path.abspath(__file__))}/../../../histo
 maquinas = df['Name'].unique()
 maquina_selecionada = st.selectbox('Escolha a máquina', maquinas)
 
-df_filtrado = df[df['Name'] == maquina_selecionada]
+df_filtrado = df[df['Name'] == maquina_selecionada].dropna(axis=1, how='all')
 
 csv = df_filtrado.to_csv().encode("utf-8")
 st.download_button(
@@ -39,7 +39,7 @@ fig_ram.update_yaxes(range=[0, df_filtrado['Total RAM (GB)'].iloc[-1]])
 st.plotly_chart(fig_ram)
 
 # --- Gráfico de uso de GPU ---
-gpus = [col for col in df.columns if 'gpu' in col.lower() and "utilization" in col.lower()]
+gpus = [col for col in df_filtrado.columns if 'gpu' in col.lower() and "utilization" in col.lower()]
 gpu_labels = {
     f"GPU_{i}_Utilization (%)": f"{df_filtrado[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
     for i in range(len(gpus))
@@ -60,7 +60,7 @@ else:
 
 
 # --- Gráfico de uso de VRAM  ---
-gpus = [col for col in df.columns if 'gpu' in col.lower() and "memory used" in col.lower()]
+gpus = [col for col in df_filtrado.columns if 'gpu' in col.lower() and "memory used" in col.lower()]
 
 gpu_labels_vram = {
     f"GPU_{i}_Memory Used (GB)": f"{df_filtrado[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
