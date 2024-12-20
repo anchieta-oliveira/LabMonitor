@@ -39,6 +39,7 @@ def save_to_excel(results, filepath):
             row[f"GPU_{gpu_index}_Utilization (%)"] = gpu["utilization_gpu"] if gpu["utilization_gpu"] != "[N/A]" else 0
             row[f"GPU_{gpu_index}_Memory Used (GB)"] = gpu["memory_used"]
             row[f"GPU_{gpu_index}_Memory Total (GB)"] = gpu["memory_total"]
+            row[f"GPU_{gpu_index}_Name"] = gpu["name"]
 
         data.append(row)
 

@@ -26,10 +26,10 @@ fig_cpu = px.line(df_filtrado, x='Timestamp', y='CPU Usage (%)',
                   title=f'Uso de CPU para {maquina_selecionada}', 
                   labels={'Timestamp': 'Tempo', 'CPU Usage (%)': 'Uso de CPU (%)'},
                   line_shape='linear', markers=True)
-fig_cpu.update_yaxes(range=[0, 100])  # Limita o eixo Y de 0 a 100%
+fig_cpu.update_yaxes(range=[0, 100]) 
 fig_cpu.update_xaxes(
     tickformat="%H:%M:%S", 
-    dtick="3600000",  # Intervalo de 1 hora
+    dtick="3600000",
 )
 st.plotly_chart(fig_cpu)
 
@@ -46,17 +46,22 @@ st.plotly_chart(fig_ram)
 
 # --- Gráfico de uso de GPU ---
 gpus = [col for col in df.columns if 'gpu' in col.lower() and "utilization" in col.lower()]
+gpu_labels = {
+    f"GPU_{i}_Utilization (%)": f"{df[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
+    for i in range(len(gpus))
+}
 
 if gpus:
     fig_gpu = px.line(df_filtrado, x='Timestamp', y=gpus, 
                       title=f'Uso de GPUs para {maquina_selecionada}', 
                       labels={'Timestamp': 'Tempo', 'value': 'Uso (%)'},
                       line_shape='linear', markers=True)
-    fig_gpu.update_yaxes(range=[0, 100])  # Limita o eixo Y de 0 a 100%
+    fig_gpu.update_yaxes(range=[0, 100])
     fig_gpu.update_xaxes(
         tickformat="%H:%M:%S", 
         dtick="3600000", 
     )
+    fig_gpu.for_each_trace(lambda trace: trace.update(name=gpu_labels[trace.name]))
     st.plotly_chart(fig_gpu)
 else:
     st.write("Nenhuma coluna de GPU encontrada no arquivo.")
@@ -66,8 +71,13 @@ else:
 # --- Gráfico de uso de VRAM  ---
 gpus = [col for col in df.columns if 'gpu' in col.lower() and "memory used" in col.lower()]
 
+gpu_labels_vram = {
+    f"GPU_{i}_Memory Used (GB)": f"{df[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
+    for i in range(len(gpus))
+}
+
 if gpus:
-    fig_gpu = px.line(df_filtrado, x='Timestamp', y=gpus, 
+    fig_gpu_vram = px.line(df_filtrado, x='Timestamp', y=gpus, 
                       title=f'Uso de VRAM para {maquina_selecionada}', 
                       labels={'Timestamp': 'Tempo', 'value': 'Uso de VRAM (GB)'},
                       line_shape='linear', markers=True)
@@ -76,6 +86,7 @@ if gpus:
         tickformat="%H:%M:%S", 
         dtick="3600000", 
     )
-    st.plotly_chart(fig_gpu)
+    fig_gpu_vram.for_each_trace(lambda trace: trace.update(name=gpu_labels_vram[trace.name]))
+    st.plotly_chart(fig_gpu_vram)
 else:
     st.write("Nenhuma coluna de GPU encontrada no arquivo.")
