@@ -31,11 +31,11 @@ fig_cpu.update_yaxes(range=[0, 100])
 st.plotly_chart(fig_cpu)
 
 # --- Gráfico de uso de RAM ---
-fig_ram = px.line(df_filtrado, x='Timestamp', y='Total RAM (GB)', 
+fig_ram = px.line(df_filtrado, x='Timestamp', y='RAM Used (GB)', 
                   title=f'Uso de RAM para {maquina_selecionada}', 
-                  labels={'Timestamp': 'Tempo', 'Total RAM (GB)': 'Uso de RAM (GB)'},
+                  labels={'Timestamp': 'Tempo', 'RAM Used (GB)': 'Uso de RAM (GB)'},
                   line_shape='linear', markers=True)
-
+fig_ram.update_yaxes(range=[0, df_filtrado['Total RAM (GB)'].iloc[-1]]) 
 st.plotly_chart(fig_ram)
 
 # --- Gráfico de uso de GPU ---
