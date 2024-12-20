@@ -1,6 +1,6 @@
 import os
-import streamlit as st
 import pandas as pd
+import streamlit as st
 import plotly.express as px
 
 st.markdown("# Histórico")
@@ -27,10 +27,7 @@ fig_cpu = px.line(df_filtrado, x='Timestamp', y='CPU Usage (%)',
                   labels={'Timestamp': 'Tempo', 'CPU Usage (%)': 'Uso de CPU (%)'},
                   line_shape='linear', markers=True)
 fig_cpu.update_yaxes(range=[0, 100]) 
-fig_cpu.update_xaxes(
-    tickformat="%H:%M:%S", 
-    dtick="3600000",
-)
+
 st.plotly_chart(fig_cpu)
 
 # --- Gráfico de uso de RAM ---
@@ -38,16 +35,13 @@ fig_ram = px.line(df_filtrado, x='Timestamp', y='Total RAM (GB)',
                   title=f'Uso de RAM para {maquina_selecionada}', 
                   labels={'Timestamp': 'Tempo', 'Total RAM (GB)': 'Uso de RAM (GB)'},
                   line_shape='linear', markers=True)
-fig_ram.update_xaxes(
-    tickformat="%H:%M:%S", 
-    dtick="3600000", 
-)
+
 st.plotly_chart(fig_ram)
 
 # --- Gráfico de uso de GPU ---
 gpus = [col for col in df.columns if 'gpu' in col.lower() and "utilization" in col.lower()]
 gpu_labels = {
-    f"GPU_{i}_Utilization (%)": f"{df[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
+    f"GPU_{i}_Utilization (%)": f"{df_filtrado[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
     for i in range(len(gpus))
 }
 
@@ -57,10 +51,7 @@ if gpus:
                       labels={'Timestamp': 'Tempo', 'value': 'Uso (%)'},
                       line_shape='linear', markers=True)
     fig_gpu.update_yaxes(range=[0, 100])
-    fig_gpu.update_xaxes(
-        tickformat="%H:%M:%S", 
-        dtick="3600000", 
-    )
+
     fig_gpu.for_each_trace(lambda trace: trace.update(name=gpu_labels[trace.name]))
     st.plotly_chart(fig_gpu)
 else:
@@ -72,7 +63,7 @@ else:
 gpus = [col for col in df.columns if 'gpu' in col.lower() and "memory used" in col.lower()]
 
 gpu_labels_vram = {
-    f"GPU_{i}_Memory Used (GB)": f"{df[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
+    f"GPU_{i}_Memory Used (GB)": f"{df_filtrado[f'GPU_{i}_Name'].iloc[-1]} (GPU {i})" 
     for i in range(len(gpus))
 }
 
