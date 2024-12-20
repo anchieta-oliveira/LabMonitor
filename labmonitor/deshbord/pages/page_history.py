@@ -14,6 +14,13 @@ maquina_selecionada = st.selectbox('Escolha a máquina', maquinas)
 
 df_filtrado = df[df['Name'] == maquina_selecionada]
 
+csv = df_filtrado.to_csv().encode("utf-8")
+st.download_button(
+    label=f"Download dados da {maquina_selecionada} em CSV",
+    data=csv,
+    file_name=f"data_{maquina_selecionada}.csv",
+    mime="text/csv", use_container_width=True
+)
 # --- Gráfico de uso de CPU ---
 fig_cpu = px.line(df_filtrado, x='Timestamp', y='CPU Usage (%)', 
                   title=f'Uso de CPU para {maquina_selecionada}', 
@@ -56,7 +63,7 @@ else:
 
 
 
-# --- Gráfico de uso de GRAM  ---
+# --- Gráfico de uso de VRAM  ---
 gpus = [col for col in df.columns if 'gpu' in col.lower() and "memory used" in col.lower()]
 
 if gpus:
