@@ -73,10 +73,7 @@ if gpus:
                       labels={'Timestamp': 'Tempo', 'value': 'Uso de VRAM (GB)'},
                       line_shape='linear', markers=True)
     #fig_gpu.update_yaxes(range=[0, 100])  # Limita o eixo Y de 0 a 100%
-    fig_gpu.update_xaxes(
-        tickformat="%H:%M:%S", 
-        dtick="3600000", 
-    )
+
     fig_gpu_vram.for_each_trace(lambda trace: trace.update(name=gpu_labels_vram[trace.name]))
     st.plotly_chart(fig_gpu_vram)
 else:
