@@ -60,3 +60,13 @@ class Monitor:
                 })
                 
         return {"disk_info": disk_info}
+
+
+    def get_users(self):
+        result = {}
+        users_command = "awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd"
+        users_output = self.connection.execute_ssh_command(users_command)
+        users = users_output.split()
+        grups = list(map(lambda u: self.connection.execute_ssh_command(f"groups {u}").split()[2:], users))
+        for u, g in zip(users, grups): result[u]=g
+        return result
