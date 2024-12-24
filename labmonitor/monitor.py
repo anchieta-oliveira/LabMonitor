@@ -11,7 +11,27 @@ class Monitor:
     def get_usage_gpu(self):
         gpu_info = []
         gpu_output = self.connection.execute_ssh_command("nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu --format=csv,noheader,nounits")
-        for line in gpu_output.split("\n"):
+        gpu_lines = gpu_output.split("\n")
+        gpu_process_output = self.connection.execute_ssh_command("nvidia-smi --query-compute-apps=pid,name,gpu_name --format=csv,noheader,nounits").split("\n")
+
+        if gpu_process_output[0] != "": 
+            pids, process, gnames = zip(*[p.split(",") for p in gpu_process_output])
+            gpu_users = [self.connection.execute_ssh_command(f"ps -p {pid} -o user --no-headers") if pid != "[N/A]" else "null" for pid in pids]
+        else: 
+            gpu_users =  ["null"] * len(gpu_lines);  process = ["null"] * len(gpu_lines)
+
+        if len(gpu_lines) != len(gpu_users):
+            name_to_user_process = {gnames[i]: (gpu_users[i], process[i]) for i in range(len(gnames))}
+            gpu_users_new = ["null"] * len(gpu_lines)
+            process_new = ["null"] * len(gpu_lines)
+            for l, gpu in enumerate(gpu_lines):
+                gpu_name = gpu.split(",")[1]
+                if gpu_name in name_to_user_process:
+                    gpu_users_new[l], process_new[l] = name_to_user_process[gpu_name]
+
+            gpu_users, process = gpu_users_new, process_new
+
+        for i, line in enumerate(gpu_lines):
             try:
                 gpu_index, name, mem_used, mem_total, gpu_util = line.split(", ")
                 gpu_info.append({
@@ -19,12 +39,13 @@ class Monitor:
                     "name": name,
                     "memory_used": float(mem_used) / 1024,
                     "memory_total": float(mem_total) / 1024,
-                    "utilization_gpu": gpu_util
+                    "utilization_gpu": gpu_util,
+                    "process": process[i],
+                    'user': gpu_users[i],
                 })
             except Exception as e:
                 print(f"Erro GPU {line}\n{e}")
                 
-
         return {"gpu_info": gpu_info}
 
     def get_usage_ram(self):
