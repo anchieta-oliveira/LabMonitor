@@ -40,6 +40,8 @@ def save_to_excel(results, filepath):
             row[f"GPU_{gpu_index}_Memory Used (GB)"] = gpu["memory_used"]
             row[f"GPU_{gpu_index}_Memory Total (GB)"] = gpu["memory_total"]
             row[f"GPU_{gpu_index}_Name"] = gpu["name"]
+            row[f"GPU_{gpu_index}_Process"] = gpu["process"]
+            row[f"GPU_{gpu_index}_User"] = gpu["user"]
 
         data.append(row)
 
