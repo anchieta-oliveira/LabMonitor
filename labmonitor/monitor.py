@@ -70,3 +70,50 @@ class Monitor:
         grups = list(map(lambda u: self.connection.execute_ssh_command(f"groups {u}").split()[2:], users))
         for u, g in zip(users, grups): result[u]=g
         return result
+
+    def add_new_user(self, username, password, sudo_password):
+        new_user_cmd = f"""
+                        echo '{sudo_password}' | sudo -S useradd -m {username} && \
+                        echo '{password}:{password}' | sudo -S chpasswd"""
+        useradd_output = self.connection.execute_ssh_command(new_user_cmd)
+        return useradd_output
+
+    def add_sudo_grup(self, username, sudo_password):
+        sudo_user_cmd = f"""echo '{sudo_password}' | sudo -S usermod -aG sudo {username}"""
+        addsudo_output = self.connection.execute_ssh_command(sudo_user_cmd)
+        return addsudo_output
+
+    def remove_sudo_grup(self, username, sudo_password):
+        sudo_user_cmd = f"echo '{sudo_password}' | sudo -S deluser {username} sudo"
+        removesudo_output = self.connection.execute_ssh_command(sudo_user_cmd)
+        return removesudo_output
+
+    def remove_user(self, username, sudo_password):
+        remove_cmd = f"echo '{sudo_password}' | sudo -S userdel -r {username}"
+        remove_output = self.connection.execute_ssh_command(remove_cmd)
+        return remove_output
+
+    def logged_users(self):
+        res = []
+        w_cmd = f"w -h"
+        w_output = self.connection.execute_ssh_command(w_cmd)
+        line = w_output.split("\n")
+        try: 
+            for usr in line:
+                info = usr.split()
+                res.append(
+                        {
+                            'user': info[0],
+                            'TTY': info[1],
+                            'from': info[2],
+                            'login_time': info[3],
+                            'jcpu': info[5],
+                        })
+        except Exception as e:
+            res.append({'user': "", 'TTY': "", 'from': "", 'login_time':"", 'jcpu': "",})
+            print(f"Erro: {e}")
+            return {'logged_users': res}
+        
+        return {'logged_users': res}
+        
+
