@@ -13,14 +13,32 @@ def run(ip, name, user, pw):
         results = {}
         c = Connection(ip, user, pw)
         m = Monitor(c)
-        results.update(m.get_usage_cpu())
-        results.update(m.get_usage_gpu())
-        results.update(m.get_usage_ram())
-        results.update(m.get_usage_disk())
-        return name, results
     except Exception as e:
         print(f"Erro ao conectar a {ip}: {e}")
         return name, None
+
+    try: 
+        results.update(m.get_usage_cpu())
+    except Exception as e:
+        results.update({"cpu_info": {"cpu_usage_percentage": -1}})
+        print(f"Erro ao obter informações de CPU de {ip}: {e}")
+    try:
+        results.update(m.get_usage_gpu())
+    except Exception as e:
+        results.update({"gpu_info": []})
+        print(f"Erro ao obter informações de GPU de {ip}: {e}")
+    try:
+        results.update(m.get_usage_ram())
+    except Exception as e:
+        {"ram_info": {"ram_used": -1,"ram_free": -1,"total_ram": -1}}
+        print(f"Erro ao obter informações de RAM de {ip}: {e}")
+    try:
+        results.update(m.get_usage_disk())
+    except Exception as e:
+        print(f"Erro ao obter informações de disco de {ip}: {e}")
+
+    return name, results
+
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
 
@@ -59,10 +77,12 @@ for name, stats in results.items():
     for gpu in stats["gpu_info"]:
         row = {
             "Name": name,
-            "GPU ID": gpu["name"],
-            "GPU Utilization (%)": gpu["utilization_gpu"],
-            "GPU Memory Used (GB)": gpu["memory_used"],
-            "GPU Memory Total (GB)": gpu["memory_total"],
+            "ID": gpu["name"],
+            "User": gpu["user"],
+            "Utilization (%)": gpu["utilization_gpu"],
+            "Memory Used (GB)": gpu["memory_used"],
+            "Memory Total (GB)": gpu["memory_total"],
+            "Process": gpu["process"],
         }
         gpu_data.append(row)
 gpu_df = pd.DataFrame(gpu_data)
