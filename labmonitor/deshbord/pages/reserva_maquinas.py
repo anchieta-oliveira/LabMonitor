@@ -20,20 +20,20 @@ def agendar():
             with st.expander(f"Lista de espera para {maquina_selecionada}"):
                 st.dataframe(lista_espera_maquina,  hide_index=True, use_container_width=True)
 
-        min_data = pd.to_datetime(queue.df.loc[queue.df['name'] == maquina_selecionada, 'fim'].max())
-        if str(min_data) == "NaT": min_data = datetime.now()
-
-
-        inicio = st.date_input("Início (Data)", min_value=min_data)
-        #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
-        fim = st.date_input("Fim (Data)", value=min_data, min_value=min_data)
-        #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
         n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
         
         con = Connection(ip=maquina['ip'].iloc[0], username=maquina['username'].iloc[0], password=maquina['password'].iloc[0])
         mon = Monitor(con)
         gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
         gpu_index, gpu_name = gpu.split(" - ")
+        
+        min_data = pd.to_datetime(queue.df.loc[(queue.df['name'] == maquina_selecionada) & (queue.df['gpu_name'] == gpu_name.strip()) & (queue.df['gpu_index'] == int(gpu_index)), 'fim'].max())
+        if str(min_data) == "NaT": min_data = datetime.now()
+
+        inicio = st.date_input("Início (Data)", min_value=min_data)
+        #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
+        fim = st.date_input("Fim (Data)", value=min_data, min_value=min_data)
+        #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
 
         username = st.text_input("Username")
         email = st.text_input("E-mail")
