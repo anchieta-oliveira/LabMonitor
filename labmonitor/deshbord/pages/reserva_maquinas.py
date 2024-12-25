@@ -26,7 +26,7 @@ def agendar():
 
         inicio = st.date_input("Início (Data)", min_value=min_data)
         #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
-        fim = st.date_input("Fim (Data)", value=min_data)
+        fim = st.date_input("Fim (Data)", value=min_data, min_value=min_data)
         #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
         n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
         
