@@ -10,6 +10,7 @@ class Queue:
 
         self.df = self.read_excel(path)
         self.path = path
+        self.data = data
         self.machines = data.machines
 
     def read_excel(self, path:str="queue.xlsx") -> pd.DataFrame:
@@ -47,8 +48,9 @@ class Queue:
     def __send_mail(self, subject:str, message:str, to:str):
         msg = MIMEMultipart()
         # setup the parameters of the message
-        password = "" # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
-        msg['From'] = ""
+        self.data.read_email()
+        password = self.data.email['password'] # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
+        msg['From'] = self.data.email['address'] 
         msg['To'] = to
         msg['Subject'] = subject
         
