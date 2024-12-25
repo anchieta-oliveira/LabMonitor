@@ -52,7 +52,7 @@ class Queue:
         self.df['status'] = self.df.apply(lambda row: 
                                 "Executando" if row['inicio'] <= data_atual and row['fim'] >= data_atual else 
                                 "Em espera" if row['inicio'] > data_atual else 
-                                "Executado", axis=1)
+                                "Finalizado", axis=1)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
 
