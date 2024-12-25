@@ -59,7 +59,7 @@ queue = Queue(data=data)
 
 # Exibir a tabela
 st.subheader("Agendamentos")
-st.write(queue.df, use_container_width=True, hide_index=True)
+st.dataframe(queue.df, use_container_width=True, hide_index=True)
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento"])
 fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": print}
