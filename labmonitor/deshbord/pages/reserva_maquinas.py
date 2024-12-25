@@ -14,7 +14,11 @@ def agendar():
         st.subheader("Adicionar Novo Registro")
         maquina_selecionada = st.selectbox('Escolha a máquina', data.machines['name'])
         maquina = data.machines.loc[data.machines["name"] == maquina_selecionada]
-        min_data = pd.to_datetime(queue.df.loc[queue.df['name'] == maquina['name'], 'fim'].max())
+        try:
+            min_data = pd.to_datetime(queue.df.loc[queue.df['name'] == maquina['name'], 'fim'].max())
+        except:
+            min_data = datetime.now()
+
         inicio = st.date_input("Início (Data)", min_value=min_data)
         #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
         fim = st.date_input("Fim (Data)", value=min_data)
@@ -35,8 +39,8 @@ def agendar():
                 st.error("Por favor, preencha todos os campos.")
             else:
                 try:
-                    inicio_datetime = str(datetime.combine(inicio, datetime.now().time()))
-                    fim_datetime = str(datetime.combine(fim, time(23, 59, 0, 0)))
+                    inicio_datetime = datetime.combine(inicio, datetime.now().time())
+                    fim_datetime = datetime.combine(fim, time(23, 59, 0, 0))
                     queue.insert(
                         ip=maquina['ip'].iloc[0],
                         name=maquina['name'].iloc[0],
@@ -46,7 +50,8 @@ def agendar():
                         n_cpu=n_cpu,
                         gpu_index=gpu_index,
                         gpu_name=gpu_name,
-                        email=email
+                        email=email, 
+                        to_send=False
                     )
                     st.success(f"Agendamento feito com Sucesso '{username}' criado com sucesso.")
 
@@ -59,9 +64,15 @@ st.sidebar.markdown("# Agendamento de Máquinas")
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
 queue = Queue(data=data)
 
-# Exibir a tabela
+try:
+    queue.update_status()
+except:
+    st.warning("Não foi possivel atualizar o status dos agendamentos.")
+    pass
+
+
 st.subheader("Agendamentos")
-st.dataframe(queue.df.drop(columns=['ip']), use_container_width=True, hide_index=True)
+st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail']), use_container_width=True, hide_index=True)
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento"])
 fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": print}
