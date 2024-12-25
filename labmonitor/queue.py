@@ -47,6 +47,10 @@ class Queue:
         
         return self.df
 
+    def update_status(self):
+        self.df['status'] = self.df['inicio'].apply(lambda inicio_data: "Executando" if inicio_data <= datetime.now() else "Em espera")
+        self.df.to_excel("queue.xlsx", index=False)
+        return self.df
 
     def __send_mail(self, subject:str, message:str, to:str):
         msg = MIMEMultipart()
