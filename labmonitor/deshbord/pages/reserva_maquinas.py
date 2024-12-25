@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 import streamlit as st
 from datetime import datetime, time
 from labmonitor.connection import Connection
@@ -8,14 +9,15 @@ from labmonitor.queue import Queue
 
 
 def agendar():
+    global queue
     with st.form("entry_form", clear_on_submit=True):
         st.subheader("Adicionar Novo Registro")
         maquina_selecionada = st.selectbox('Escolha a máquina', data.machines['name'])
         maquina = data.machines.loc[data.machines["name"] == maquina_selecionada]
-
-        inicio = st.date_input("Início (Data)", value=datetime.now().date())
+        min_data = pd.to_datetime(queue.df.loc[queue.df['name'] == maquina['name'], 'fim'].max())
+        inicio = st.date_input("Início (Data)", min_value=min_data)
         #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
-        fim = st.date_input("Fim (Data)", value=datetime.now().date())
+        fim = st.date_input("Fim (Data)", value=min_data)
         #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
         n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
         
@@ -59,7 +61,7 @@ queue = Queue(data=data)
 
 # Exibir a tabela
 st.subheader("Agendamentos")
-st.dataframe(queue.df, use_container_width=True, hide_index=True)
+st.dataframe(queue.df.drop(columns=['ip']), use_container_width=True, hide_index=True)
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento"])
 fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": print}
