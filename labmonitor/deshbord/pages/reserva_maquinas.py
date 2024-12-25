@@ -58,6 +58,38 @@ def agendar():
                 except Exception as e:
                     st.error(f"Erro ao agendar: {e}")
                     
+def remover_agendamento():
+    global queue
+    with st.form("remove_form", clear_on_submit=True):
+        st.subheader("Remover Agendamento")
+        try:
+            agendamentos = queue.df[queue.df['status'] != 'Finalizado'].apply(
+                                        lambda row: f"{row['name']} - {row['username']} - {row['inicio']} - {row['fim']} - {row['n_cpu']} - {row['gpu_name']}",
+                                        axis=1).tolist()
+        except Exception as e:
+            agendamentos = []
+
+        agendamento = st.selectbox('Escolha usuário', agendamentos)
+        
+        email = st.text_input("E-mail")
+        remove = st.form_submit_button("Remover")
+
+        if remove:
+            nome_maquina, usuario, inicio, fim, n_cpu, gpu_name = agendamento.split(' - ')
+
+            index_remove = queue.df[(queue.df['name'] == nome_maquina) & (queue.df['username'] == usuario) & (queue.df['inicio'] == inicio) & (queue.df['fim'] == fim)].index[0]
+            if not email:
+                st.error("Por favor, preencha todos os campos.")
+            elif email == queue.df.iloc[index_remove]['e-mail']:
+                try:
+                    queue.remove(index=index_remove)
+                    st.success(f"Agendamento excluído com Sucesso.")
+                except Exception as e:
+                    st.error(f"Erro ao agendar: {e}")
+            elif email != queue.df.iloc[index_remove]['e-mail']:
+                st.error(f"E-mail não corresponde ao do agendamento.")
+
+
 st.markdown("# Agendamento de Máquinas")
 st.sidebar.markdown("# Agendamento de Máquinas")
 
@@ -75,7 +107,7 @@ st.subheader("Agendamentos")
 st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail']), use_container_width=True, hide_index=True)
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento"])
-fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": print}
+fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": remover_agendamento}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
