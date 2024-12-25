@@ -65,7 +65,7 @@ def agendar():
                     
 def remover_agendamento():
     global queue
-    with st.form("remove_form", clear_on_submit=True):
+    with st.container(border=True):
         st.subheader("Remover Agendamento")
         try:
             agendamentos = queue.df[queue.df['status'] != 'Finalizado'].apply(
@@ -77,7 +77,7 @@ def remover_agendamento():
         agendamento = st.selectbox('Escolha usuário', agendamentos)
         
         email = st.text_input("E-mail")
-        remove = st.form_submit_button("Remover")
+        remove = st.button("Remover")
 
         if remove:
             nome_maquina, usuario, inicio, fim, n_cpu, gpu_name = agendamento.split(' - ')
