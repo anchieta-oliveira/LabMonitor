@@ -10,52 +10,53 @@ from labmonitor.queue import Queue
 
 def agendar():
     global queue
-    st.subheader("Novo Agendamento")
-    maquina_selecionada = st.selectbox('Escolha a máquina', data.machines['name'])
-    maquina = data.machines.loc[data.machines["name"] == maquina_selecionada]
+    with st.container(border=True):
+        st.subheader("Novo Agendamento")
+        maquina_selecionada = st.selectbox('Escolha a máquina', data.machines['name'])
+        maquina = data.machines.loc[data.machines["name"] == maquina_selecionada]
 
-    min_data = pd.to_datetime(queue.df.loc[queue.df['name'] == maquina_selecionada, 'fim'].max())
-    if str(min_data) == "NaT": min_data = datetime.now()
+        min_data = pd.to_datetime(queue.df.loc[queue.df['name'] == maquina_selecionada, 'fim'].max())
+        if str(min_data) == "NaT": min_data = datetime.now()
 
 
-    inicio = st.date_input("Início (Data)", min_value=min_data)
-    #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
-    fim = st.date_input("Fim (Data)", value=min_data)
-    #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
-    n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
-    
-    con = Connection(ip=maquina['ip'].iloc[0], username=maquina['username'].iloc[0], password=maquina['password'].iloc[0])
-    mon = Monitor(con)
-    gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
-    gpu_index, gpu_name = gpu.split(" - ")
+        inicio = st.date_input("Início (Data)", min_value=min_data)
+        #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
+        fim = st.date_input("Fim (Data)", value=min_data)
+        #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
+        n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
+        
+        con = Connection(ip=maquina['ip'].iloc[0], username=maquina['username'].iloc[0], password=maquina['password'].iloc[0])
+        mon = Monitor(con)
+        gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
+        gpu_index, gpu_name = gpu.split(" - ")
 
-    username = st.text_input("Username")
-    email = st.text_input("E-mail")
+        username = st.text_input("Username")
+        email = st.text_input("E-mail")
 
-    submitted = st.button("Agendar")
-    if submitted:
-        if not username or not n_cpu:
-            st.error("Por favor, preencha todos os campos.")
-        else:
-            try:
-                inicio_datetime = datetime.combine(inicio, datetime.now().time())
-                fim_datetime = datetime.combine(fim, time(23, 59, 0, 0))
-                queue.insert(
-                    ip=maquina['ip'].iloc[0],
-                    name=maquina['name'].iloc[0],
-                    username=username,
-                    inicio=inicio_datetime,
-                    fim=fim_datetime,
-                    n_cpu=n_cpu,
-                    gpu_index=gpu_index,
-                    gpu_name=gpu_name,
-                    email=email, 
-                    to_send=False
-                )
-                st.success(f"Agendamento feito com Sucesso '{username}' criado com sucesso.")
+        submitted = st.button("Agendar")
+        if submitted:
+            if not username or not n_cpu:
+                st.error("Por favor, preencha todos os campos.")
+            else:
+                try:
+                    inicio_datetime = datetime.combine(inicio, datetime.now().time())
+                    fim_datetime = datetime.combine(fim, time(23, 59, 0, 0))
+                    queue.insert(
+                        ip=maquina['ip'].iloc[0],
+                        name=maquina['name'].iloc[0],
+                        username=username,
+                        inicio=inicio_datetime,
+                        fim=fim_datetime,
+                        n_cpu=n_cpu,
+                        gpu_index=gpu_index,
+                        gpu_name=gpu_name,
+                        email=email, 
+                        to_send=False
+                    )
+                    st.success(f"Agendamento feito com Sucesso '{username}' criado com sucesso.")
 
-            except Exception as e:
-                st.error(f"Erro ao agendar: {e}")
+                except Exception as e:
+                    st.error(f"Erro ao agendar: {e}")
                     
 def remover_agendamento():
     global queue
