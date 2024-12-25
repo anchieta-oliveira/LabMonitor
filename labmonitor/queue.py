@@ -24,7 +24,7 @@ class Queue:
         return self.df
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "inicio", "fim", "n_cpu", "gpu_index", "gpu_name", "e-mail","status"]
+        columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
@@ -48,7 +48,11 @@ class Queue:
         return self.df
 
     def update_status(self):
-        self.df['status'] = self.df['inicio'].apply(lambda inicio_data: "Executando" if inicio_data <= datetime.now() else "Em espera")
+        data_atual = datetime.now()
+        self.df['status'] = self.df.apply(lambda row: 
+                                "Executando" if row['inicio'] <= data_atual and row['fim'] >= data_atual else 
+                                "Em espera" if row['inicio'] > data_atual else 
+                                "Executado", axis=1)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
 
