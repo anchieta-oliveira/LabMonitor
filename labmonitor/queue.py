@@ -20,7 +20,7 @@ class Queue:
         return self.df
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "inicio", "fim", "n_cpu", "gpu_index", "gpu_name", "e-mail "]
+        columns = ["ip", "name", "username", "inicio", "fim", "n_cpu", "gpu_index", "gpu_name", "e-mail"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
