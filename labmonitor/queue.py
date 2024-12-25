@@ -47,6 +47,13 @@ class Queue:
         
         return self.df
 
+
+    def remove(self, index:int, to_send:bool=False):
+        self.df = self.df.drop(index=index)
+        self.df.to_excel(self.path, index=False)
+        if to_send: self.__send_mail(subject=f"Agendamento Máquinas LMDM", message=str("new_entry"), to=self.df['e-mail'].iloc[index])
+
+
     def update_status(self):
         data_atual = datetime.now()
         self.df['status'] = self.df.apply(lambda row: 
@@ -55,6 +62,7 @@ class Queue:
                                 "Finalizado", axis=1)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
+        
 
     def __send_mail(self, subject:str, message:str, to:str):
         msg = MIMEMultipart()
