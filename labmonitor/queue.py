@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import smtplib
 import pandas as pd
@@ -16,6 +17,8 @@ class Queue:
     def read_excel(self, path:str="queue.xlsx") -> pd.DataFrame:
         if os.path.exists(path):
             self.df = pd.read_excel(path)
+            self.df['fim'] = self.df['fim'] = pd.to_datetime(self.df['fim'])
+            self.df['inicio'] = self.df['inicio'] = pd.to_datetime(self.df['inicio'])
         else:
             self.reset()
         return self.df
