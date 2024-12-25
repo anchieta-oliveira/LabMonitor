@@ -26,7 +26,7 @@ def agendar():
         mon = Monitor(con)
         gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
         gpu_index, gpu_name = gpu.split(" - ")
-        
+
         min_data = pd.to_datetime(queue.df.loc[(queue.df['name'] == maquina_selecionada) & (queue.df['gpu_name'] == gpu_name.strip()) & (queue.df['gpu_index'] == int(gpu_index)), 'fim'].max())
         if str(min_data) == "NaT": min_data = datetime.now()
 
@@ -40,8 +40,10 @@ def agendar():
 
         submitted = st.button("Agendar")
         if submitted:
-            if not username or not n_cpu:
+            if not username or not n_cpu or not email:
                 st.error("Por favor, preencha todos os campos.")
+            elif min_data >= pd.to_datetime(inicio) or min_data >= pd.to_datetime(fim):
+                st.error("Por favor, indique uma data livre para o recurso desejado (GPU ou CPU).")
             else:
                 try:
                     inicio_datetime = datetime.combine(inicio, datetime.now().time())
