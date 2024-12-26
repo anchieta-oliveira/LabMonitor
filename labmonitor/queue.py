@@ -71,6 +71,10 @@ class Queue:
         data_atual = datetime.now().date()
         return self.df[self.df['fim'].dt.date == data_atual]
 
+    def __fist_day(self) -> pd.DataFrame:
+        data_atual = datetime.now().date()
+        return self.df[self.df['inicio'].dt.date == data_atual]
+
     def __not_notified_last_day(self, df) -> pd.DataFrame:
         return df[df['notification_last_day'] == "N"]
 
@@ -89,7 +93,7 @@ class Queue:
                 
                 for (_, e), r in zip(df_last.iterrows(), r_email): 
                     if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
-                    
+
             self.save()
             time.sleep(feq_time) 
 
