@@ -22,6 +22,9 @@ class Queue:
             self.reset()
         return self.df
 
+    def save(self):
+        self.df.to_excel(self.path, index=False)
+
     def reset(self) -> pd.DataFrame:
         columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_last_day"]
         self.df = pd.DataFrame(columns=columns)
@@ -63,28 +66,51 @@ class Queue:
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
         
+    def __last_day(self) -> pd.DataFrame:
+        data_atual = datetime.now().date()
+        return self.df[self.df['fim'].dt.date == data_atual]
 
-    def __send_mail(self, subject:str, message:str, to:str):
-        msg = MIMEMultipart()
-        # setup the parameters of the message
-        self.data.read_email()
-        password = self.data.email['password'] # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
-        msg['From'] = self.data.email['address'] 
-        msg['To'] = to
-        msg['Subject'] = subject
+    def __not_notified_last_day(self, df) -> pd.DataFrame:
+        return df[df['notification_last_day'] == "N"]
+
+    def monitor(self, last_day:bool=True, send_email:bool=True):
+        self.read_excel(self.path)
+        self.update_status()
+        if last_day: df_last = self.__last_day()
+        if send_email: 
+            send_last_day = self.__not_notified_last_day(df_last)
+            r_email = [self.__send_mail(subject=f"Hoje é o útlimo dia do seu agendamento - {e['name']}.", message=str(e), to=e['e-mail']) for i, e in send_last_day.iterrows()]
+            for (_, e), r in zip(df_last.iterrows(), r_email): 
+                if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
+        self.save()
         
-        # add in the message body
-        msg.attach(MIMEText(message, 'plain'))
+
+    def __send_mail(self, subject:str, message:str, to:str) -> bool:
+        try:
+            msg = MIMEMultipart()
+            # setup the parameters of the message
+            self.data.read_email()
+            password = self.data.email['password'] # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
+            msg['From'] = self.data.email['address'] 
+            msg['To'] = to
+            msg['Subject'] = subject
+            
+            # add in the message body
+            msg.attach(MIMEText(message, 'plain'))
+            
+            #create server
+            server = smtplib.SMTP('smtp.gmail.com: 587')
+            
+            server.starttls()
+            
+            # Login Credentials for sending the mail
+            server.login(msg['From'], password)
         
-        #create server
-        server = smtplib.SMTP('smtp.gmail.com: 587')
-        
-        server.starttls()
-        
-        # Login Credentials for sending the mail
-        server.login(msg['From'], password)
-    
-        # send the message via the server.
-        server.sendmail(msg['From'], msg['To'], msg.as_string())
-        server.quit()
-        print ("successfully sent email")
+            # send the message via the server.
+            server.sendmail(msg['From'], msg['To'], msg.as_string())
+            server.quit()
+            print (f"Successfully sent email {to}")
+            return True
+        except Exception as e: 
+            print(f"Erro a enviar e-mail: {e}")
+            return False
