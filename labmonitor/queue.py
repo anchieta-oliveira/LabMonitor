@@ -81,16 +81,102 @@ class Queue:
             if last_day: df_last = self.__last_day()
             if send_email: 
                 send_last_day = self.__not_notified_last_day(df_last)
-                r_email = [self.__send_mail(subject=f"Hoje é o útlimo dia do seu agendamento - {e['name']}.", 
-                                            message=e.to_string(header=True, index=False), 
-                                            to=e['e-mail']) 
+                r_email = [self.__send_mail(subject=f"Útlimo dia do seu agendamento - {e['name']}.", 
+                                            message=self.__make_email_html(e, title="Agendamento"), 
+                                            to=e['e-mail'], 
+                                            subtype="html") 
                                             for i, e in send_last_day.iterrows()]
                 
                 for (_, e), r in zip(df_last.iterrows(), r_email): 
                     if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
+                    
             self.save()
             time.sleep(feq_time) 
-        
+
+
+    def __head_mail(self) -> str:
+        return """<head>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .header {
+                    background-color: #A8D08D; /* verde claro */
+                    color: white;
+                    padding: 10px 0;
+                    text-align: center;
+                }
+                .container {
+                    margin: 20px;
+                }
+                .table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }
+                .table th, .table td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                .table th {
+                    background-color: #f2f2f2;
+                }
+                .footer {
+                    margin-top: 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #777;
+                }
+            </style>
+            <div class="header">
+                <span style="font-size: 24px; font-weight: bold; margin-left: 10px;">Laboratório de Modelagem e Dinâmica Molecular</span>
+            </div>
+        </head>"""
+
+    def __footer_mail(self) -> str:
+        return """<div class="footer">
+            <p>Este é um e-mail automático. Por favor, não responda.</p>
+        </div>"""
+
+    def __make_email_html(self, df_row: pd.Series, title: str = "Relatório"):
+        return f"""<html>
+        {self.__head_mail()}
+        <body>
+            <div class="container">
+                <h2>{title}</h2>
+                <table class="table">
+                    <tr>
+                        <th>Nome</th>
+                        <td>{df_row['name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Usuário</th>
+                        <td>{df_row['username']}</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>{df_row['status']}</td>
+                    </tr>
+                    <tr>
+                        <th>Início</th>
+                        <td>{df_row['inicio']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fim</th>
+                        <td>{df_row['fim']}</td>
+                    </tr>
+                    <tr>
+                        <th>CPU</th>
+                        <td>{df_row['n_cpu']}</td>
+                    </tr>
+                    <tr>
+                        <th>GPU</th>
+                        <td>{df_row['gpu_name']} (Índice {df_row['gpu_index']})</td>
+                    </tr>
+                </table>
+            </div>
+        {self.__footer_mail()}
+        </body>
+    </html>"""
 
     def __send_mail(self, subject:str, message:str, to:str, subtype:str="plain") -> bool:
         try:
