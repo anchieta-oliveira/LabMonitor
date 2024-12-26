@@ -27,7 +27,7 @@ class Queue:
         self.df.to_excel(self.path, index=False)
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_last_day"]
+        columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_last_day", "notification_fist_day"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
@@ -43,7 +43,8 @@ class Queue:
             "gpu_index": gpu_index,
             "gpu_name": gpu_name,
             "e-mail": email,
-            "notification_last_day": "N"
+            "notification_last_day": "N",
+            "notification_fist_day": "N",
         }
         self.df = pd.concat([self.df, pd.DataFrame([new_entry])], ignore_index=True)
         self.df.to_excel(self.path, index=False)
@@ -77,6 +78,9 @@ class Queue:
 
     def __not_notified_last_day(self, df) -> pd.DataFrame:
         return df[df['notification_last_day'] == "N"]
+
+    def __not_notified_fist_day(self, df) -> pd.DataFrame:
+        return df[df['notification_fist_day'] == "N"]
 
     def monitor(self, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
         while True:
