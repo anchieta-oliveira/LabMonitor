@@ -104,7 +104,7 @@ def lista_espera():
         print(maquinas_espera)
         for m in maquinas_espera:
             with st.expander(m):
-                st.dataframe(queue.df[queue.df['name'] == m][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail']),  hide_index=True, use_container_width=True)
+                st.dataframe(queue.df[queue.df['name'] == m][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail', 'notification_last_day']),  hide_index=True, use_container_width=True)
 
 
 st.markdown("# Agendamento de Máquinas")
@@ -121,7 +121,7 @@ except:
 
 
 st.subheader("Agendamentos")
-st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail']), use_container_width=True, hide_index=True)
+st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail', 'notification_last_day']), use_container_width=True, hide_index=True)
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento", "Lista de Espera"])
 fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": remover_agendamento, "Lista de Espera": lista_espera}
