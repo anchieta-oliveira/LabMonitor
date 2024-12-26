@@ -8,7 +8,6 @@ from email.mime.multipart import MIMEMultipart
 
 class Queue:
     def __init__(self, data:Data, path:str="queue.xlsx"):
-
         self.df = self.read_excel(path)
         self.path = path
         self.data = data
@@ -24,7 +23,7 @@ class Queue:
         return self.df
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail"]
+        columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_last_day"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue.xlsx", index=False)
         return self.df
@@ -39,7 +38,8 @@ class Queue:
             "n_cpu": n_cpu,
             "gpu_index": gpu_index,
             "gpu_name": gpu_name,
-            "e-mail": email
+            "e-mail": email,
+            "notification_last_day": "N"
         }
         self.df = pd.concat([self.df, pd.DataFrame([new_entry])], ignore_index=True)
         self.df.to_excel(self.path, index=False)
