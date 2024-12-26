@@ -15,7 +15,7 @@ def agendar():
         maquina_selecionada = st.selectbox('Escolha a máquina', data.machines['name'])
         maquina = data.machines.loc[data.machines["name"] == maquina_selecionada]
 
-        lista_espera_maquina = queue.df[queue.df['name'] == maquina_selecionada][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail'])
+        lista_espera_maquina = queue.df[queue.df['name'] == maquina_selecionada][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day'])
         if lista_espera_maquina.size > 0:
             with st.expander(f"Lista de espera para {maquina_selecionada}"):
                 st.dataframe(lista_espera_maquina,  hide_index=True, use_container_width=True)
