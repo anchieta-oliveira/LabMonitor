@@ -82,21 +82,36 @@ class Queue:
     def __not_notified_fist_day(self, df) -> pd.DataFrame:
         return df[df['notification_fist_day'] == "N"]
 
-    def monitor(self, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
+    def monitor(self, fist_day:bool = True, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
         while True:
             self.read_excel(self.path)
             self.update_status()
             if last_day: df_last = self.__last_day()
-            if send_email: 
+            if fist_day: df_fist = self.__fist_day()
+
+            if send_email and last_day: 
                 send_last_day = self.__not_notified_last_day(df_last)
                 r_email = [self.__send_mail(subject=f"Útlimo dia do seu agendamento - {e['name']}.", 
-                                            message=self.__make_email_html(e, title="Agendamento"), 
+                                            message=self.__make_email_html(e, title="Agendamento Máquinas LMDM",
+                                                                           observation="Caso deseje continuar usando os recursos da máquina, lembre de agendar no sistema. Muito obrigado."), 
                                             to=e['e-mail'], 
                                             subtype="html") 
                                             for i, e in send_last_day.iterrows()]
                 
                 for (_, e), r in zip(df_last.iterrows(), r_email): 
                     if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
+
+            if send_email and fist_day: 
+                send_fist_day = self.__not_notified_fist_day(df_fist)
+                r_email = [self.__send_mail(subject=f"Seu agendamento começa hoje - {e['name']}.", 
+                                            message=self.__make_email_html(e, title="Agendamento Máquinas LMDM", 
+                                                                           observation="Em caso de desistência lembre de cancelar no sistema. Muito obrigado."), 
+                                            to=e['e-mail'], 
+                                            subtype="html") 
+                                            for i, e in send_fist_day.iterrows()]
+                
+                for (_, e), r in zip(df_fist.iterrows(), r_email): 
+                    if r: self.df.loc[(self.df == e).all(axis=1), 'notification_fist_day'] = "Y"
 
             self.save()
             time.sleep(feq_time) 
@@ -145,7 +160,7 @@ class Queue:
             <p>Este é um e-mail automático. Por favor, não responda.</p>
         </div>"""
 
-    def __make_email_html(self, df_row: pd.Series, title: str = "Relatório"):
+    def __make_email_html(self, df_row: pd.Series, title: str = "Relatório", observation:str=""):
         return f"""<html>
         {self.__head_mail()}
         <body>
@@ -181,6 +196,12 @@ class Queue:
                         <td>{df_row['gpu_name']} (Índice {df_row['gpu_index']})</td>
                     </tr>
                 </table>
+                {f'''
+                <div class="observation">
+                    <h3>Observações</h3>
+                    <p>{observation}</p>
+                </div>
+                ''' if observation else ''}
             </div>
         {self.__footer_mail()}
         </body>
