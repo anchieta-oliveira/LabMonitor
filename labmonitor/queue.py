@@ -48,15 +48,16 @@ class Queue:
         }
         self.df = pd.concat([self.df, pd.DataFrame([new_entry])], ignore_index=True)
         self.df.to_excel(self.path, index=False)
-        if to_send: self.__send_mail(subject=f"Agendamento Máquinas LMDM - {username}", message=str(new_entry), to=email)
+        if to_send: self.__send_mail(subject=f"Seu agendamento foi removido - {new_entry['name']}", message=self.__make_email_html(df_row=new_entry), to=new_entry['e-mail'], subtype="html")
         
         return self.df
 
 
-    def remove(self, index:int, to_send:bool=False):
+    def remove(self, index:int, to_send:bool=True):
+        e = self.df.iloc[index]
         self.df = self.df.drop(index=index)
         self.df.to_excel(self.path, index=False)
-        if to_send: self.__send_mail(subject=f"Agendamento Máquinas LMDM", message=str("new_entry"), to=self.df['e-mail'].iloc[index])
+        if to_send: self.__send_mail(subject=f"Seu agendamento foi removido - {e['name']}", message=self.__make_email_html(df_row=e), to=e['e-mail'], subtype="html")
 
 
     def update_status(self):
@@ -82,7 +83,7 @@ class Queue:
     def __not_notified_fist_day(self, df) -> pd.DataFrame:
         return df[df['notification_fist_day'] == "N"]
 
-    def monitor(self, fist_day:bool = True, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
+    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
         while True:
             self.read_excel(self.path)
             self.update_status()
@@ -160,7 +161,7 @@ class Queue:
             <p>Este é um e-mail automático. Por favor, não responda.</p>
         </div>"""
 
-    def __make_email_html(self, df_row: pd.Series, title: str = "Relatório", observation:str=""):
+    def __make_email_html(self, df_row: pd.Series, title: str = "Agendamento", observation:str=""):
         return f"""<html>
         {self.__head_mail()}
         <body>
