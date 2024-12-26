@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import smtplib
+import time
 import pandas as pd
 from labmonitor.data import Data
 from email.mime.text import MIMEText
@@ -73,19 +74,25 @@ class Queue:
     def __not_notified_last_day(self, df) -> pd.DataFrame:
         return df[df['notification_last_day'] == "N"]
 
-    def monitor(self, last_day:bool=True, send_email:bool=True):
-        self.read_excel(self.path)
-        self.update_status()
-        if last_day: df_last = self.__last_day()
-        if send_email: 
-            send_last_day = self.__not_notified_last_day(df_last)
-            r_email = [self.__send_mail(subject=f"Hoje é o útlimo dia do seu agendamento - {e['name']}.", message=str(e), to=e['e-mail']) for i, e in send_last_day.iterrows()]
-            for (_, e), r in zip(df_last.iterrows(), r_email): 
-                if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
-        self.save()
+    def monitor(self, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
+        while True:
+            self.read_excel(self.path)
+            self.update_status()
+            if last_day: df_last = self.__last_day()
+            if send_email: 
+                send_last_day = self.__not_notified_last_day(df_last)
+                r_email = [self.__send_mail(subject=f"Hoje é o útlimo dia do seu agendamento - {e['name']}.", 
+                                            message=e.to_string(header=True, index=False), 
+                                            to=e['e-mail']) 
+                                            for i, e in send_last_day.iterrows()]
+                
+                for (_, e), r in zip(df_last.iterrows(), r_email): 
+                    if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
+            self.save()
+            time.sleep(feq_time) 
         
 
-    def __send_mail(self, subject:str, message:str, to:str) -> bool:
+    def __send_mail(self, subject:str, message:str, to:str, subtype:str="plain") -> bool:
         try:
             msg = MIMEMultipart()
             # setup the parameters of the message
@@ -96,7 +103,7 @@ class Queue:
             msg['Subject'] = subject
             
             # add in the message body
-            msg.attach(MIMEText(message, 'plain'))
+            msg.attach(MIMEText(message, subtype))
             
             #create server
             server = smtplib.SMTP('smtp.gmail.com: 587')
