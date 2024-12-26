@@ -21,11 +21,16 @@ def agendar():
                 st.dataframe(lista_espera_maquina,  hide_index=True, use_container_width=True)
 
         n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
+        try:
+            con = Connection(ip=maquina['ip'].iloc[0], username=maquina['username'].iloc[0], password=maquina['password'].iloc[0])
+            mon = Monitor(con)
+            gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
+            gpu_index, gpu_name = gpu.split(" - ")
         
-        con = Connection(ip=maquina['ip'].iloc[0], username=maquina['username'].iloc[0], password=maquina['password'].iloc[0])
-        mon = Monitor(con)
-        gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
-        gpu_index, gpu_name = gpu.split(" - ")
+        except Exception as e:
+            gpu = st.selectbox('Selecione a GPU', ["-1 - Null"])
+            gpu_index, gpu_name = gpu.split(" - ")
+            st.error(f"Erro ao obeter informações de GPU. Provavelmente {maquina_selecionada} não tem GPU, está offline ou com falha.")
 
         min_data = pd.to_datetime(queue.df.loc[(queue.df['name'] == maquina_selecionada) & (queue.df['gpu_name'] == gpu_name.strip()) & (queue.df['gpu_index'] == int(gpu_index)), 'fim'].max())
         if str(min_data) == "NaT": min_data = datetime.now()
