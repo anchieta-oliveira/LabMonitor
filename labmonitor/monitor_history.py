@@ -7,19 +7,38 @@ from labmonitor.monitor import Monitor
 from labmonitor.connection import Connection
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 def run(ip, name, user, pw):
     try:
         print(f"Conectando a {ip}...")
         results = {}
         c = Connection(ip, user, pw)
         m = Monitor(c)
-        results.update(m.get_usage_cpu())
-        results.update(m.get_usage_gpu())
-        results.update(m.get_usage_ram())
-        return name, results
     except Exception as e:
         print(f"Erro ao conectar a {ip}: {e}")
         return name, None
+
+    try: 
+        results.update(m.get_usage_cpu())
+    except Exception as e:
+        results.update({"cpu_info": {"cpu_usage_percentage": -1}})
+        print(f"Erro ao obter informações de CPU de {ip}: {e}")
+    try:
+        results.update(m.get_usage_gpu())
+    except Exception as e:
+        results.update({"gpu_info": []})
+        print(f"Erro ao obter informações de GPU de {ip}: {e}")
+    try:
+        results.update(m.get_usage_ram())
+    except Exception as e:
+        {"ram_info": {"ram_used": -1,"ram_free": -1,"total_ram": -1}}
+        print(f"Erro ao obter informações de RAM de {ip}: {e}")
+    try:
+        results.update(m.get_usage_disk())
+    except Exception as e:
+        print(f"Erro ao obter informações de disco de {ip}: {e}")
+
+    return name, results
 
 def save_to_excel(results, filepath):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
