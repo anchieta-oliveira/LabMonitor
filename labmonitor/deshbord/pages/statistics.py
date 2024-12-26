@@ -16,7 +16,7 @@ except Exception as e:
 def cpu_use():
     st.subheader("Uso de CPU (H) por máquina")
     maquinas = df['Name'].unique()
-    cpu_time = [((df[df['Name'] == m]['CPU Usage (%)']/100)*60).sum()/60 for m in maquinas]
+    cpu_time = [((df[df['Name'] == m]['CPU Usage (%)']/100)).sum() for m in maquinas]
     df_cpu_use = pd.DataFrame({"Name": maquinas, "CPU Usage (H)": cpu_time})
 
     fig_cpu_use = px.treemap(data_frame=df_cpu_use, values="CPU Usage (H)", path=[px.Constant("All"), "Name"], )
