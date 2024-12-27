@@ -99,7 +99,7 @@ class Queue:
                                         subtype="html") 
                                         for i, e in send_last_day.iterrows()]
             
-            for (_, e), r in zip(df_last.iterrows(), r_email): 
+            for (_, e), r in zip(send_last_day.iterrows(), r_email): 
                 if r: self.df.loc[(self.df == e).all(axis=1), 'notification_last_day'] = "Y"
 
         if send_email and fist_day: 
@@ -111,7 +111,7 @@ class Queue:
                                             subtype="html") 
                                             for i, e in send_fist_day.iterrows()]
                 
-                for (_, e), r in zip(df_fist.iterrows(), r_email): 
+                for (_, e), r in zip(send_fist_day.iterrows(), r_email): 
                     if r: self.df.loc[(self.df == e).all(axis=1), 'notification_fist_day'] = "Y"
         self.save()
 
