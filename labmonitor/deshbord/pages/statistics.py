@@ -24,7 +24,7 @@ def cpu_use():
     fig_cpu_use.update_traces(marker=dict(cornerradius=5), root_color="lightgray", )
     fig_cpu_use.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     st.plotly_chart(fig_cpu_use)
-    with st.expander(f"Tabela de dados."):
+    with st.expander(f"Tabela."):
         st.dataframe(df_cpu_use.sort_values("CPU Usage (H)", ascending=False), use_container_width=True, hide_index=True)
 
 
@@ -43,7 +43,7 @@ def gpu_use():
     fig_gpu_use.update_traces(marker=dict(cornerradius=5), root_color="lightgray", )
     fig_gpu_use.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     st.plotly_chart(fig_gpu_use)
-    with st.expander(f"Tabela de dados."):
+    with st.expander(f"Tabela."):
         st.dataframe(df_gpu_usage.sort_values("GPU Usage (H)", ascending=False), use_container_width=True, hide_index=True)
 
 cpu_use()
