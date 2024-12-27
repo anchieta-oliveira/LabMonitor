@@ -66,7 +66,7 @@ def agendar():
                         to_send=False
                     )
                     st.success(f"Agendamento feito com Sucesso '{username}' criado com sucesso.")
-
+                    monitor_now()
                 except Exception as e:
                     st.error(f"Erro ao agendar: {e}")
                     
@@ -123,6 +123,12 @@ try:
 except:
     st.warning("Não foi possivel atualizar o status dos agendamentos.")
     pass
+
+def monitor_now():
+    try:
+        queue.monitor(now=True)
+    except Exception as e:
+        st.warning(f"{e}")
 
 
 st.subheader("Agendamentos")
