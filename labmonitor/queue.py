@@ -83,7 +83,7 @@ class Queue:
     def __not_notified_fist_day(self, df) -> pd.DataFrame:
         return df[df['notification_fist_day'] == "N"]
 
-    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200):
+    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=3600):
         while True:
             self.read_excel(self.path)
             self.update_status()
