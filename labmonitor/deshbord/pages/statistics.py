@@ -19,10 +19,13 @@ def cpu_use():
     cpu_time = [((df[df['Name'] == m]['CPU Usage (%)']/100)).sum() for m in maquinas]
     df_cpu_use = pd.DataFrame({"Name": maquinas, "CPU Usage (H)": cpu_time})
 
-    fig_cpu_use = px.treemap(data_frame=df_cpu_use, values="CPU Usage (H)", path=[px.Constant("All"), "Name"], )
+    fig_cpu_use = px.treemap(data_frame=df_cpu_use, values="CPU Usage (H)", path=[px.Constant("All"), "Name"])
 
-    fig_cpu_use.update_traces(marker=dict(cornerradius=5), root_color="lightgray")
+    fig_cpu_use.update_traces(marker=dict(cornerradius=5), root_color="lightgray", )
+    fig_cpu_use.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     st.plotly_chart(fig_cpu_use)
+    with st.expander(f"Tabela de dados."):
+        st.dataframe(df_cpu_use.sort_values("CPU Usage (H)", ascending=False), use_container_width=True, hide_index=True)
 
 
 def gpu_use():
@@ -36,8 +39,12 @@ def gpu_use():
         for i, (col_uti, col_name) in enumerate(zip(df_maq.loc[:,df_maq.columns.str.contains(r"gpu.*utilization", case=False, regex=True)], df_maq.loc[:,df_maq.columns.str.contains(r"gpu_.*_name", case=False, regex=True)])):
             r.append({"Máquina": maq, "GPU Usage (H)": (df_maq[col_uti]/100).sum(), "GPU Name": df_maq[col_name].iloc[-1]+ str(i*" ")})
     df_gpu_usage = pd.DataFrame(r)
-    fig_gpu_use = px.sunburst(df_gpu_usage, names="Máquina", path=['Máquina', 'GPU Name'], values='GPU Usage (H)')
+    fig_gpu_use = px.treemap(df_gpu_usage, names="Máquina", path=[px.Constant("All"), 'Máquina', 'GPU Name'], values='GPU Usage (H)')
+    fig_gpu_use.update_traces(marker=dict(cornerradius=5), root_color="lightgray", )
+    fig_gpu_use.update_layout(margin = dict(t=0, l=0, r=0, b=0))
     st.plotly_chart(fig_gpu_use)
+    with st.expander(f"Tabela de dados."):
+        st.dataframe(df_gpu_usage.sort_values("GPU Usage (H)", ascending=False), use_container_width=True, hide_index=True)
 
 cpu_use()
 gpu_use()
