@@ -74,11 +74,13 @@ class QueueJob:
             for gpu in stats["gpu_info"]:
                 gpu_index = gpu["gpu_index"]
                 row[f"GPU_{gpu_index}_Name"] = gpu["name"]
-                row[f"GPU_{gpu_index}_status"] = ""
+                sts = ""
+                if self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0]
+                row[f"GPU_{gpu_index}_status"] = sts
 
             data_gpu.append(row)
 
-        self.data.machines = pd.merge(self.machines, pd.DataFrame(data_gpu), on="name")
+        self.data.machines = pd.merge(self.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
         self.data.save_machines()
 
     def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
