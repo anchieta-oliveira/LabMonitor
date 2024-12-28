@@ -1,5 +1,3 @@
-
-
 import os
 import pandas as pd
 from labmonitor.data import Data
@@ -29,7 +27,7 @@ class QueueJob:
         self.df.to_excel(self.path, index=False)
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "path_exc", "path_origin", "script_name", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
+        columns = ["ip", "name", "username", "status", "path_exc", "path_origin", "script_name", "datatime_agendamento", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue_job.xlsx", index=False)
         return self.df
@@ -82,6 +80,36 @@ class QueueJob:
 
         self.data.machines = pd.merge(self.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
         self.data.save_machines()
+
+    def __allowed_gpu(self):
+        g_names = [e.split(",") for e in self.machines['name_allowed_gpu'].to_list()]
+        col = self.machines.loc[:, self.machines.columns.str.contains(r"gpu_.*_name", case=False, regex=True)]
+
+        for i, row in self.machines.iterrows():
+            for c in col:
+                for name in g_names[i]:
+                    print(name, c)
+                    if name == self.machines[c].iloc[i]:
+                        self.machines.loc[i, c.replace("Name", "status")] = "disponivel"
+                    elif name != self.machines[c].iloc[i] and pd.isna(self.machines[c].iloc[i]): 
+                        self.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
+
+
+    def __status_in_queue(self):
+        v = self.df[self.df['status'] == "executando"]
+        for i, maq in v.iterrows():
+            self.machines.loc[
+                    (self.machines['name'] == maq['name']) & 
+                    (self.machines['ip'] == maq['ip']) & 
+                    (self.machines[f"GPU_{maq['gpu_index']}_Name"] == maq['gpu_name']),
+                    f"GPU_{maq['gpu_index']}_status"
+                ] = "executando"
+     
+
+    def update_status(self):
+        self.__allowed_gpu()
+        self.__status_in_queue()
+
 
     def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
         cmd = f"""sshpass -p '{password_origin}' ssh {username_origin}@{ip_origin} "echo '{password_origin}' | sudo -S sshpass -p '{password_exc}' scp -r {path_origin} {username_exc}@{ip_exc}:{path_exc}" """
