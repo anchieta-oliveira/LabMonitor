@@ -88,7 +88,6 @@ class QueueJob:
         for i, row in self.machines.iterrows():
             for c in col:
                 for name in g_names[i]:
-                    print(name, c)
                     if name == self.machines[c].iloc[i]:
                         self.machines.loc[i, c.replace("Name", "status")] = "disponivel"
                     elif name != self.machines[c].iloc[i] and pd.isna(self.machines[c].iloc[i]): 
@@ -110,8 +109,32 @@ class QueueJob:
         self.__allowed_gpu()
         self.__status_in_queue()
 
-
     def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
         cmd = f"""sshpass -p '{password_origin}' ssh {username_origin}@{ip_origin} "echo '{password_origin}' | sudo -S sshpass -p '{password_exc}' scp -r {path_origin} {username_exc}@{ip_exc}:{path_exc}" """
+        print(cmd)
         os.system(cmd)
+        
+
+    def __make_script_exc(self, n_cpu:int, script:str, gpu_id:int=-1):
+        return f"""
+        import subprocess
+        with open("labmonitor.status", "w") as log: log.write("iniciado")
+        if {gpu_id} == -1:
+            pcs = subprocess.Popen(f"taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
+        else:
+            pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
+
+        with open("labmonitor.status", "w") as log: log.write("executando")
+        pcs.wait()
+        with open("labmonitor.status", "w") as log: log.write("finalizado_copiar")"""
+    
+
+    def prepare_job(self, machine_name:str, n_cpu:int, script:str, path_exc:str, gpu_id:int=-1):
+        row = self.machines[self.machines['name'] == machine_name]
+        try:
+            con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
+        except Exception as e:
+            print(f"Erro na conexão: {e}")
+
+        con.execute_ssh_command(f"echo '{self.__make_script_exc(n_cpu, script, gpu_id)}' > {path_exc}")
         
