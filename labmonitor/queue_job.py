@@ -112,36 +112,36 @@ class QueueJob:
     def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
         try:
             print(f"Conectando a {ip_origin}...")
-            results = {}
             c = Connection(ip_origin, username_origin, password_origin)
+            cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
+            c.execute_ssh_command(cmd)
+            c.ssh.close()
         except Exception as e:
             print(f"Erro ao conectar a {ip_origin}: {e}")
-        cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
-        c.execute_ssh_command(cmd)
-        c.ssh.close()
+
         
         
 
     def __make_script_exc(self, n_cpu:int, script:str, gpu_id:int=-1):
         return f"""
-        import subprocess
-        with open("labmonitor.status", "w") as log: log.write("iniciado")
-        if {gpu_id} == -1:
-            pcs = subprocess.Popen(f"taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
-        else:
-            pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
-
-        with open("labmonitor.status", "w") as log: log.write("executando")
-        pcs.wait()
-        with open("labmonitor.status", "w") as log: log.write("finalizado_copiar")"""
+import subprocess
+with open("labmonitor.status", "w") as log: log.write("iniciado")
+if {gpu_id} == -1:
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
+else:
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
+with open("labmonitor.status", "w") as log: log.write("executando")
+pcs.wait()
+with open("labmonitor.status", "w") as log: log.write("finalizado_copiar")"""
     
 
     def prepare_job(self, machine_name:str, n_cpu:int, script:str, path_exc:str, gpu_id:int=-1):
-        row = self.machines[self.machines['name'] == machine_name]
+        row = self.machines[self.machines['name'] == machine_name].iloc[0]
         try:
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
+            con.execute_ssh_command(f"echo '{self.__make_script_exc(n_cpu, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
         except Exception as e:
-            print(f"Erro na conexão: {e}")
+            print(f"Erro na conexão ao preparar trabalho (srcipt run_labmonitor.py): {e}")
 
-        con.execute_ssh_command(f"echo '{self.__make_script_exc(n_cpu, script, gpu_id)}' > {path_exc}")
+        
         
