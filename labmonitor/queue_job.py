@@ -116,7 +116,7 @@ class QueueJob:
 
     def update_status_jobs(self):
         for i, job in self.df.iterrows():
-            if job['status'] == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
+            if job['status'].strip() == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
         self.save()
 
 
@@ -162,8 +162,9 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             print(f"Iniciando trabalho em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             status, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
+            if (not pid in con.execute_ssh_command(f"ps -p {pid}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"
             con.ssh.close()
-            return status, int(pid)
+            return status.strip(), int(pid)
         except Exception as e:
             print(f"Erro na conexão ao iniciar o trabalho: {e}")
             return "", -1
