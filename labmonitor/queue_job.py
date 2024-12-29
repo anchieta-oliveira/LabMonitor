@@ -114,6 +114,30 @@ class QueueJob:
         self.data.save_machines()
 
 
+    def search_available_machine(self, n_cpu:int, gpu:bool = False, gpu_name:list = ["all"]):
+        self.data.read_machines(self.data.path_machines)
+    
+        available_cpu = self.data.machines.loc[((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= n_cpu)]
+        
+        if gpu:
+            gpu_status_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
+            gpu_name_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
+            
+            gpu_status_available = self.data.machines[gpu_status_cols].eq("disponivel").any(axis=1)
+
+            if gpu_name[0] != "all": gpu_name_match = self.data.machines[gpu_name_cols].isin(gpu_name).any(axis=1) 
+            else: gpu_name_match = self.data.machines[gpu_name_cols].any(axis=1) 
+            
+            filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
+                                                       gpu_status_available & 
+                                                       gpu_name_match]
+            return filtered_machines
+        
+        else:
+            return available_cpu
+
+
+
     def update_status_jobs(self):
         for i, job in self.df.iterrows():
             if job['status'].strip() == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
