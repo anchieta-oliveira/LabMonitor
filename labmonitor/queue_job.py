@@ -107,8 +107,18 @@ class QueueJob:
      
 
     def update_status_machines(self):
+        self.update_gpu()
         self.__allowed_gpu()
         self.__status_in_queue()
+        self.data.machines = self.machines
+        self.data.save_machines()
+
+
+    def update_status_jobs(self):
+        for i, job in self.df.iterrows():
+            if job['status'] == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
+        self.save()
+
 
     def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
         try:
