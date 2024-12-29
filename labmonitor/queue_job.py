@@ -121,27 +121,54 @@ class QueueJob:
 
         
         
-
     def __make_script_exc(self, cpu_start:int, cpu_end:int, script:str, gpu_id:int=-1):
         return f"""
+import os
 import subprocess
-with open("labmonitor.status", "w") as log: log.write("iniciado")
+with open("labmonitor.status", "w") as log: log.write("iniciado  - "+ str(os.getpid()))
 if {gpu_id} == -1:
     pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {cpu_start}-{cpu_end} sh {script} > {script.split(".")[-1]}", shell=True)
 else:
     pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {cpu_start}-{cpu_end} sh {script} > {script.split(".")[-1]}", shell=True)
-with open("labmonitor.status", "w") as log: log.write("executando")
+with open("labmonitor.status", "w") as log: log.write("executando - "+ str(os.getpid()))
 pcs.wait()
-with open("labmonitor.status", "w") as log: log.write("finalizado_copiar")"""
+with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ str(os.getpid()))"""
     
 
-    def prepare_job(self, machine_name:str, n_cpu:int, script:str, path_exc:str, gpu_id:int=-1):
+    def prepare_job(self, machine_name:str, cpu_start:int, cpu_end:int, script:str, path_exc:str, gpu_id:int=-1):
         row = self.machines[self.machines['name'] == machine_name].iloc[0]
         try:
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
-            con.execute_ssh_command(f"echo '{self.__make_script_exc(n_cpu, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
+            con.execute_ssh_command(f"echo '{self.__make_script_exc(cpu_start, cpu_end, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
+            print(f"Preparação concluída em {row['ip']} - {path_exc}")
         except Exception as e:
             print(f"Erro na conexão ao preparar trabalho (srcipt run_labmonitor.py): {e}")
 
-        
-        
+
+    def get_status_job(self, machine_name:str, path_exc:str):
+        row = self.machines[self.machines['name'] == machine_name].iloc[0]
+        try:
+            print(f"Iniciando trabalho em {row['ip']}")
+            con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
+            status, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
+            con.ssh.close()
+            return status, int(pid)
+        except Exception as e:
+            print(f"Erro na conexão ao iniciar o trabalho: {e}")
+            return "", -1
+
+
+    def star_job(self, machine_name:str, path_exc:str)  -> int:
+        row = self.machines[self.machines['name'] == machine_name].iloc[0]
+        try:
+            print(f"Iniciando trabalho em {row['ip']}")
+            con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
+            ch = con.ssh.get_transport().open_session()
+            ch.exec_command(f"cd {path_exc} && nohup python3 run_labmonitor.py >  run_labmonitor.log &")
+            _, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split("-")
+            ch.close()
+            con.ssh.close()
+            return int(pid)
+        except Exception as e:
+            print(f"Erro na conexão ao iniciar o trabalho: {e}")
+            return -1
