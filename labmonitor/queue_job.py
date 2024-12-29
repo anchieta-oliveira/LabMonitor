@@ -1,4 +1,5 @@
 import os
+import time
 import pandas as pd
 from labmonitor.data import Data
 from labmonitor.monitor import Monitor
@@ -172,3 +173,14 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         except Exception as e:
             print(f"Erro na conexão ao iniciar o trabalho: {e}")
             return -1
+    
+    def __monitor_now(self):
+        self.update_status()
+
+
+    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200, now:bool=False):
+        while not now:
+            self.__monitor_now()
+            time.sleep(feq_time)
+        else:
+            self.__monitor_now()
