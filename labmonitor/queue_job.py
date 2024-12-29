@@ -166,7 +166,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             con.ssh.close()
             return status.strip(), int(pid)
         except Exception as e:
-            print(f"Erro na conexão ao iniciar o trabalho: {e}")
+            print(f"Erro ao verificar status do job: {e}")
             return "", -1
 
 
