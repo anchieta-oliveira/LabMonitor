@@ -162,7 +162,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             print(f"Iniciando trabalho em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             status, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
-            if (not pid in con.execute_ssh_command(f"ps -p {pid}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"
+            if (not pid in con.execute_ssh_command(f"ps -p {pid}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"; con.execute_ssh_command(f"echo '{status} - {pid}' > {path_exc}/labmonitor.status")
             con.ssh.close()
             return status.strip(), int(pid)
         except Exception as e:
