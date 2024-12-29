@@ -28,7 +28,7 @@ class QueueJob:
         self.df.to_excel(self.path, index=False)
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "status", "pid", "path_exc", "path_origin", "script_name", "datatime_agendamento", "submit", "inicio", "fim", "n_cpu", "cpu_start", "cpu_end", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
+        columns = ["ip", "name", "username", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "cpu_start", "cpu_end", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue_job.xlsx", index=False)
         return self.df
