@@ -106,7 +106,7 @@ class QueueJob:
                 ] = "executando"
      
 
-    def update_status(self):
+    def update_status_machines(self):
         self.__allowed_gpu()
         self.__status_in_queue()
 
@@ -175,7 +175,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             return -1
     
     def __monitor_now(self):
-        self.update_status()
+        self.update_status_machines()
 
 
     def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200, now:bool=False):
