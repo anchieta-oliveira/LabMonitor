@@ -122,14 +122,14 @@ class QueueJob:
         
         
 
-    def __make_script_exc(self, n_cpu:int, script:str, gpu_id:int=-1):
+    def __make_script_exc(self, cpu_start:int, cpu_end:int, script:str, gpu_id:int=-1):
         return f"""
 import subprocess
 with open("labmonitor.status", "w") as log: log.write("iniciado")
 if {gpu_id} == -1:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {cpu_start}-{cpu_end} sh {script} > {script.split(".")[-1]}", shell=True)
 else:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c 0-{n_cpu} sh {script} > {script.split(".")[-1]}", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {cpu_start}-{cpu_end} sh {script} > {script.split(".")[-1]}", shell=True)
 with open("labmonitor.status", "w") as log: log.write("executando")
 pcs.wait()
 with open("labmonitor.status", "w") as log: log.write("finalizado_copiar")"""
