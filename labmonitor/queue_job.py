@@ -110,9 +110,16 @@ class QueueJob:
         self.__status_in_queue()
 
     def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
-        cmd = f"""sshpass -p '{password_origin}' ssh {username_origin}@{ip_origin} "echo '{password_origin}' | sudo -S sshpass -p '{password_exc}' scp -r {path_origin} {username_exc}@{ip_exc}:{path_exc}" """
-        print(cmd)
-        os.system(cmd)
+        try:
+            print(f"Conectando a {ip_origin}...")
+            results = {}
+            c = Connection(ip_origin, username_origin, password_origin)
+        except Exception as e:
+            print(f"Erro ao conectar a {ip_origin}: {e}")
+        cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
+        c.execute_ssh_command(cmd)
+        c.ssh.close()
+        
         
 
     def __make_script_exc(self, n_cpu:int, script:str, gpu_id:int=-1):
