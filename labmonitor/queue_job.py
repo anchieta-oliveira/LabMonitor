@@ -128,10 +128,21 @@ class QueueJob:
                 ] = "executando"
      
 
+    def __update_cpu_used(self):
+        v = self.df[self.df['status'] == "executando"]
+        self.data.machines.loc[:,'cpu_used'] = 0
+        for i, maq in v.iterrows():
+            self.data.machines.loc[
+                    (self.data.machines['name'] == maq['name']) & 
+                    (self.data.machines['ip'] == maq['ip']),
+                    "cpu_used"
+                ] += maq['n_cpu']
+
+
     def update_status_machines(self):
         self.update_gpu()
         self.__allowed_gpu()
-        # Tem que atualziar os nucleos
+        self.__update_cpu_used()
         self.__status_in_queue()
         self.data.save_machines()
 
@@ -206,7 +217,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
     def get_status_job(self, machine_name:str, path_exc:str):
         row = self.machines[self.machines['name'] == machine_name].iloc[0]
         try:
-            print(f"Iniciando trabalho em {row['ip']}")
+            print(f"Verificando status do job em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             status, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
             if (not pid in con.execute_ssh_command(f"ps -p {pid}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"; con.execute_ssh_command(f"echo '{status} - {pid}' > {path_exc}/labmonitor.status")
