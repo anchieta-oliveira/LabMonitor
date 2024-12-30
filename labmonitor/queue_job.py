@@ -1,5 +1,5 @@
 import os
-import time
+from datetime import datetime, time
 import pandas as pd
 from labmonitor.data import Data
 from labmonitor.monitor import Monitor
@@ -43,11 +43,13 @@ class QueueJob:
             "n_cpu": n_cpu,
             "e-mail": email,
             "gpu_requested": ",".join(gpus),
+            "submit": datetime.now(),
             "notification_start": "N",
             "notification_end": "N",
         }
 
         self.df = pd.concat([self.df, pd.DataFrame([new_job])], ignore_index=True)
+        self.save()
         print(self.df)
 
     
@@ -159,7 +161,8 @@ class QueueJob:
 
     def update_status_jobs(self):
         for i, job in self.df.iterrows():
-            if job['status'].strip() == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
+            if job['status'] == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
+            if pd.isna(job['status']): self.df.loc[i, ['status']] = 'esperando'
         self.save()
 
 
@@ -230,6 +233,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
     
     def __monitor_now(self):
         self.update_status_machines()
+        self.update_status_jobs()
 
 
     def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200, now:bool=False):
