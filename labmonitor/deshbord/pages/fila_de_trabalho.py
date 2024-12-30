@@ -12,7 +12,7 @@ def submit_job():
     global queue
     with st.container(border=True):
         st.subheader("Submeter trabalho")
-        queue.update_status_machines()
+        
         data_g = Data(); data_g.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
 
         with st.expander(f"Máquinas recebendo trabalhos"):
@@ -32,21 +32,31 @@ def submit_job():
 
                 
         machine_origin = st.selectbox('Máquina de origem', data_g.machines['name'])
-        path_origin = st.text_input("Diretorio com arquivos de trabalho")
+        path_origin = st.text_input("Diretorio com arquivos de trabalho (máquina de origem)")
         script_name = st.text_input("Nome do script")
         username = st.text_input("Username")
         email = st.text_input("e-mail")
         
+        submitted = st.button("Submeter")
 
-        queue.submit(username=username,
-                     machine_origin=machine_origin,
-                     script_name=script_name,
-                     path_origin=path_origin,
-                     n_cpu=n_cpu,
-                     email=email,
-                     gpus=selected_gpus
-                     )
-        
+        if submitted:
+            if not username or not n_cpu or not email or not path_origin or not script_name or not machine_origin:
+                st.error("Por favor, preencha todos os campos.")
+            else:
+                try:
+                    queue.submit(username=username,
+                                machine_origin=machine_origin,
+                                script_name=script_name,
+                                path_origin=path_origin,
+                                n_cpu=n_cpu,
+                                email=email,
+                                gpus=selected_gpus
+                                )
+
+                    st.success(f"Trabalho submetido com sucesso '{username}'")
+                    queue.update_status_machines()
+                except Exception as e:
+                    st.error(f"Erro ao submeter: {e}")
 
 
 def remove_job():
@@ -56,13 +66,12 @@ def remove_job():
 
 
 # Exc 
-st.markdown("# Agendamento de Máquinas")
-st.sidebar.markdown("# Agendamento de Máquinas")
+st.sidebar.markdown("# Fila de trabalhos")
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.xlsx")
 queue = QueueJob(data=data)
 
-st.subheader("Agendamentos")
+st.subheader("Fila de trabalhos")
 st.dataframe(queue.df[['name', 'username', 'submit', 'n_cpu', 'gpu_name']], use_container_width=True, hide_index=True)
 
 
