@@ -28,11 +28,30 @@ class QueueJob:
         self.df.to_excel(self.path, index=False)
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "cpu_start", "cpu_end", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
+        columns = ["ip", "name", "username", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "cpu_start", "cpu_end", "gpu_requested", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue_job.xlsx", index=False)
         return self.df
     
+
+    def submit(self, username:str, machine_origin:str, script_name:str, path_origin:str, n_cpu:int, email:str, gpus:list=['all']):
+        new_job = {
+            "username": username,
+            "machine_origin": machine_origin,
+            "script_name": script_name,
+            "path_origin": path_origin,
+            "n_cpu": n_cpu,
+            "e-mail": email,
+            "gpu_requested": ",".join(gpus),
+            "notification_start": "N",
+            "notification_end": "N",
+        }
+
+        self.df = pd.concat([self.df, pd.DataFrame([new_job])], ignore_index=True)
+        print(self.df)
+
+    
+
     def update_gpu(self):
         def run(ip, name, user, pw):
             try:
