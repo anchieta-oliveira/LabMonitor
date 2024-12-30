@@ -1,6 +1,7 @@
 import os
-from datetime import datetime, time
+import time
 import pandas as pd
+from datetime import datetime
 from labmonitor.data import Data
 from labmonitor.monitor import Monitor
 from labmonitor.connection import Connection
@@ -100,29 +101,29 @@ class QueueJob:
 
             data_gpu.append(row)
 
-        self.data.machines = pd.merge(self.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
+        self.data.machines = pd.merge(self.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
         self.data.save_machines()
 
     def __allowed_gpu(self):
-        g_names = [e.split(",") for e in self.machines['name_allowed_gpu'].to_list()]
-        col = self.machines.loc[:, self.machines.columns.str.contains(r"gpu_.*_name", case=False, regex=True)]
+        g_names = [e.split(",") for e in self.data.machines['name_allowed_gpu'].to_list()]
+        col = self.data.machines.loc[:, self.data.machines.columns.str.contains(r"gpu_.*_name", case=False, regex=True)]
 
-        for i, row in self.machines.iterrows():
+        for i, row in self.data.machines.iterrows():
             for c in col:
                 for name in g_names[i]:
-                    if name == self.machines[c].iloc[i]:
-                        self.machines.loc[i, c.replace("Name", "status")] = "disponivel"
-                    elif name != self.machines[c].iloc[i] and pd.isna(self.machines[c].iloc[i]): 
-                        self.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
+                    if name == self.data.machines[c].iloc[i]:
+                        self.data.machines.loc[i, c.replace("Name", "status")] = "disponivel"
+                    elif name != self.data.machines[c].iloc[i] and pd.isna(self.data.machines[c].iloc[i]): 
+                        self.data.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
 
 
     def __status_in_queue(self):
         v = self.df[self.df['status'] == "executando"]
         for i, maq in v.iterrows():
-            self.machines.loc[
-                    (self.machines['name'] == maq['name']) & 
-                    (self.machines['ip'] == maq['ip']) & 
-                    (self.machines[f"GPU_{maq['gpu_index']}_Name"] == maq['gpu_name']),
+            self.data.machines.loc[
+                    (self.data.machines['name'] == maq['name']) & 
+                    (self.data.machines['ip'] == maq['ip']) & 
+                    (self.data.machines[f"GPU_{maq['gpu_index']}_Name"] == maq['gpu_name']),
                     f"GPU_{maq['gpu_index']}_status"
                 ] = "executando"
      
@@ -130,8 +131,8 @@ class QueueJob:
     def update_status_machines(self):
         self.update_gpu()
         self.__allowed_gpu()
+        # Tem que atualziar os nucleos
         self.__status_in_queue()
-        self.data.machines = self.machines
         self.data.save_machines()
 
 
@@ -184,9 +185,9 @@ import os
 import subprocess
 with open("labmonitor.status", "w") as log: log.write("iniciado  - "+ str(os.getpid()))
 if {gpu_id} == -1:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {cpu_start}-{cpu_end} sh {script} > {script.split(".")[-1]}", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[-1]}", shell=True)
 else:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {cpu_start}-{cpu_end} sh {script} > {script.split(".")[-1]}", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[-1]}", shell=True)
 with open("labmonitor.status", "w") as log: log.write("executando - "+ str(os.getpid()))
 pcs.wait()
 with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ str(os.getpid()))"""
@@ -223,17 +224,121 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             ch = con.ssh.get_transport().open_session()
             ch.exec_command(f"cd {path_exc} && nohup python3 run_labmonitor.py >  run_labmonitor.log &")
+            time.sleep(0.1)
             _, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split("-")
             ch.close()
             con.ssh.close()
             return int(pid)
         except Exception as e:
-            print(f"Erro na conexão ao iniciar o trabalho: {e}")
+            print(f"Erro a iniciar trabalho {row['ip']} {path_exc}: {e}")
             return -1
     
+
+    def __make_dir_exc(self, machine_exc:str, dir_exc:str):
+        row = self.machines[self.machines['name'] == machine_exc].iloc[0]
+        try:
+            print(f"Conectando a {row['ip']}...")
+            con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
+            con.execute_ssh_command(f"mkdir {dir_exc}")
+            print(f"mkdir {dir_exc}")
+            return True
+        except Exception as e:
+            print(f"Erro ao conectar a para criar dir_exec {row['ip']}: {e}")
+            return False
+    
+
+    def __esperando(self, index:int):
+        n_cpu=self.df.loc[index, 'n_cpu']
+        gpu = not pd.isna(self.df.loc[index, 'gpu_requested'])
+        if gpu: gpu_name = self.df.loc[index, 'gpu_requested'].split(",")
+        else: gpu_name = ["all"]
+
+        machines = self.search_available_machine(n_cpu=n_cpu,
+                                      gpu=gpu,
+                                      gpu_name=gpu_name
+                                      )
+        
+        if machines.shape[0] > 0:
+            machine = machines.iloc[0]
+            self.df.loc[index, ['status']] = 'executando'
+            self.df.loc[index, ['ip', 'name']] = machine[['ip', 'name']]
+
+            # pegar start e and CPU e colocar na fila
+            max_cpu_end = self.df[self.df['name'] == machine['name']]['cpu_end'].max()
+            self.df.loc[index, ['cpu_start', 'cpu_end']] = (max_cpu_end+1, n_cpu-1)
+            if pd.isna(self.df.loc[index, 'cpu_start']): self.df.loc[index, 'cpu_start'] = 0
+
+            # Atualziar CPUs ocupadas nas maquinas 
+            self.data.machines.loc[self.data.machines['name'] == machine['name'], 'cpu_used'] += n_cpu
+
+            if gpu:
+                # Pegar GPU e Index na fila de trabalho
+                gpu_status_cols = machines.loc[0:,machines.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
+                gpu_name_cols = machines.loc[0:,machines.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
+                for n, s in zip(gpu_name_cols, gpu_status_cols):
+                    gpu_index = n.split('_')[1]
+                    if "disponivel" == machine[s] and (machine[n] in gpu_name or "all" in gpu_name):
+                        self.df.loc[index, ['gpu_name', 'gpu_index']] = (machine[n], gpu_index)
+                        # Atualizar status da GPU nas maquinas
+                        self.data.machines.loc[self.data.machines['name'] == machine['name'], s] = "executando"
+            
+            # Criar pasta na maquina exc com username_datasubmit
+            self.__make_dir_exc(machine_exc=machine['name'], dir_exc=f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/")
+
+            # Atualizar diretorio exc 
+            self.df.loc[index, ['path_exc']] = f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/{self.df.loc[index, 'path_origin'].split('/')[-1]}/"
+    
+            # Copiar arquivos 
+            data_machines_origin = Data(); data_machines_origin.read_machines()
+            
+            self.copy_dir(ip_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
+                          username_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
+                          password_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
+                          path_origin=self.df.loc[index, 'path_origin'],
+                          
+                          ip_exc=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0],
+                          username_exc=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'username'].iloc[0],
+                          password_exc=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'password'].iloc[0],
+                          path_exc=self.df.loc[index, 'path_exc']
+                          )
+
+            # Iniciar trabalho
+            self.prepare_job(machine_name=machine['name'], 
+                            cpu_start=self.df.loc[index, 'cpu_start'], 
+                            cpu_end=self.df.loc[index, 'cpu_end'], 
+                            script=self.df.loc[index, 'script_name'],
+                            path_exc=self.df.loc[index, 'path_exc'],
+                            gpu_id=self.df.loc[index, 'gpu_index']
+                            )
+
+            pid = self.star_job(machine_name=machine['name'], path_exc=self.df.loc[index, 'path_exc'])
+            self.df.loc[index, ['pid']] = pid
+
+            self.data.save_machines() 
+            self.save()
+            
+
+    def __finalizado_copiar(self, index:int):
+        pass
+
+    def __executando(self, index:int):
+        pass
+
+    def __finalizado(self, index:int):
+        pass
+
+    def __nao_finalizado_corretamente(self, index):
+        pass
+
     def __monitor_now(self):
+        action = {'esperando': self.__esperando, "finalizado_copiar": self.__finalizado_copiar,"executando": self.__executando, "finalizado": self.__finalizado, "nao_finalizado_corretamente": self.__nao_finalizado_corretamente}
+
         self.update_status_machines()
         self.update_status_jobs()
+        
+        for i, row in self.df.iterrows():
+            action[row['status']](index=i)
+
 
 
     def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200, now:bool=False):
