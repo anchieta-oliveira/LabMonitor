@@ -98,7 +98,8 @@ class QueueJob:
                 gpu_index = gpu["gpu_index"]
                 row[f"GPU_{gpu_index}_Name"] = gpu["name"]
                 sts = ""
-                if self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0]
+                if f"GPU_{gpu_index}_status" in self.data.machines.columns: 
+                    if self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0]
                 row[f"GPU_{gpu_index}_status"] = sts
 
             data_gpu.append(row)
@@ -201,9 +202,9 @@ import os
 import subprocess
 with open("labmonitor.status", "w") as log: log.write("iniciado  - "+ str(os.getpid()))
 if {gpu_id} == -1:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[-1]}", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[0]}.log", shell=True)
 else:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[-1]}", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[0]}.log", shell=True)
 with open("labmonitor.status", "w") as log: log.write("executando - "+ str(os.getpid()))
 pcs.wait()
 with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ str(os.getpid()))"""
