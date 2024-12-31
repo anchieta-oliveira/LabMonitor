@@ -35,10 +35,11 @@ class QueueJob:
         return self.df
     
 
-    def submit(self, username:str, machine_origin:str, script_name:str, path_origin:str, n_cpu:int, email:str, gpus:list=['all']):
+    def submit(self, username:str, job_name:str, machine_origin:str, script_name:str, path_origin:str, n_cpu:int, email:str, gpus:list=['all']):
         new_job = {
             "username": username,
             "machine_origin": machine_origin,
+            "job_name": job_name,
             "script_name": script_name,
             "path_origin": path_origin,
             "n_cpu": n_cpu,
@@ -178,11 +179,13 @@ class QueueJob:
         self.save()
 
 
-    def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str):
+    def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str, inverse:bool = False):
         try:
             print(f"Conectando a {ip_origin}...")
             c = Connection(ip_origin, username_origin, password_origin)
-            cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
+            if inverse: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {username_exc}@{ip_exc}:{path_exc} {path_origin}/ """
+            else: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
+                
             c.execute_ssh_command(cmd)
             c.ssh.close()
         except Exception as e:
@@ -330,7 +333,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             
 
     def __finalizado_copiar(self, index:int):
-        pass
+        pass        
 
     def __executando(self, index:int):
         pass
