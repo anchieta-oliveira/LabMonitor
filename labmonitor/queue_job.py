@@ -1,5 +1,6 @@
 import os
 import time
+import threading
 import pandas as pd
 from datetime import datetime
 from labmonitor.data import Data
@@ -183,10 +184,11 @@ class QueueJob:
         try:
             print(f"Conectando a {ip_origin}...")
             c = Connection(ip_origin, username_origin, password_origin)
-            if inverse: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {username_exc}@{ip_exc}:{path_exc} {path_origin}/ """
+            if inverse: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {username_exc}@{ip_exc}:{path_exc}/ {path_origin}/ && echo '{password_origin}' | sudo -S chmod 777 {path_origin}/{os.path.basename(os.path.normpath(path_exc))}"""
             else: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass & echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
                 
             c.execute_ssh_command(cmd)
+            #if inverse: c.execute_ssh_command(f"echo '{password_origin}' | sudo -S chmod 777 {path_origin}/{os.path.basename(os.path.normpath(path_exc))}")
             c.ssh.close()
         except Exception as e:
             print(f"Erro ao conectar a {ip_origin}: {e}")
@@ -300,7 +302,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             self.__make_dir_exc(machine_exc=machine['name'], dir_exc=f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/")
 
             # Atualizar diretorio exc 
-            self.df.loc[index, ['path_exc']] = f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/{self.df.loc[index, 'path_origin'].split('/')[-1]}/"
+            self.df.loc[index, ['path_exc']] = f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/{os.path.basename(os.path.normpath(self.df.loc[index, 'path_origin']))}/"
     
             # Copiar arquivos 
             data_machines_origin = Data(); data_machines_origin.read_machines()
@@ -333,7 +335,71 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             
 
     def __finalizado_copiar(self, index:int):
-        pass        
+        def subp_copy():
+            data_machines_origin = Data(); data_machines_origin.read_machines()
+            ip_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0]
+            username_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'username'].iloc[0]
+            password_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'password'].iloc[0]
+            path_exc = self.df.loc[index, 'path_exc']
+            copiar = False
+            copiado = False
+
+            try:
+                print(f"Atualziando status copiando {ip_exc}")
+                con = Connection(ip=ip_exc,
+                                username=username_exc, 
+                                password=password_exc)
+                
+                _, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
+                con.execute_ssh_command(f"echo 'copiando - {pid}' > {path_exc}/labmonitor.status")
+                con.ssh.close()
+                self.df.loc[index, ['status']] = 'copiando'; self.save()
+                copiar = True
+            except Exception as e:
+                print(f"Erro ao atualizar status do job p/ copiando: {e}")
+
+            if copiar:
+                try:
+                    self.copy_dir(ip_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
+                        username_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
+                        password_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
+                        path_origin=self.df.loc[index, 'path_origin'],
+                        
+                        ip_exc=ip_exc,
+                        username_exc=username_exc,
+                        password_exc=password_exc,
+                        path_exc=path_exc,
+                        inverse=True
+                        )
+                    copiado = True
+                    
+                except Exception as e:
+                    print(f'Erro ao copiar arquivos de exc para origin {ip_exc}: {e}')
+            
+            if copiado:
+                cmd = f"echo 'finalizado - {pid}' > {path_exc}/labmonitor.status"
+                self.df.loc[index, ['status']] = 'finalizado'; self.save()
+                
+            else:
+                cmd = f"echo 'falha_ao_copiar - {pid}' > {path_exc}/labmonitor.status"
+                self.df.loc[index, ['status']] = 'falha_ao_copiar'; self.save()
+            try:
+                print(f"Atualziando status final de copia (falha_ao_copiar ou finalizado - {copiado}) {ip_exc}")
+                con = Connection(ip=ip_exc,
+                                username=username_exc, 
+                                password=password_exc)
+                con.execute_ssh_command(cmd)
+                con.ssh.close()
+            except Exception as e:
+                print(f"Erro ao atualizar status do job p/ finalizado: {e}")
+                
+
+        proc = threading.Thread(target=subp_copy)
+        proc.start()
+        
+        
+
+
 
     def __executando(self, index:int):
         pass
@@ -346,18 +412,23 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
     def __monitor_now(self):
         action = {'esperando': self.__esperando, "finalizado_copiar": self.__finalizado_copiar,"executando": self.__executando, "finalizado": self.__finalizado, "nao_finalizado_corretamente": self.__nao_finalizado_corretamente}
-
+        self.read_excel()
         self.update_status_machines()
         self.update_status_jobs()
+        print(self.df)
         
         for i, row in self.df.iterrows():
             action[row['status']](index=i)
 
 
 
-    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=43200, now:bool=False):
+    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=20, now:bool=False):
         while not now:
+            print(f"Monitorando inicio: {datetime.now()}")
+
             self.__monitor_now()
+            
+            print(f"Monitorando fim: {datetime.now()}")
             time.sleep(feq_time)
         else:
             self.__monitor_now()
