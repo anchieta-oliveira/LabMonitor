@@ -409,6 +409,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             if copiado:
                 cmd = f"echo 'finalizado - {pid}' > {path_exc}/labmonitor.status"
                 self.df.loc[index, ['status']] = 'finalizado'; self.save()
+                self.__finalizado(index)
                 
             else:
                 cmd = f"echo 'falha_ao_copiar - {pid}' > {path_exc}/labmonitor.status"
