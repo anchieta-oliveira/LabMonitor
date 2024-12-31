@@ -30,7 +30,7 @@ class QueueJob:
         self.df.to_excel(self.path, index=False)
 
     def reset(self) -> pd.DataFrame:
-        columns = ["ip", "name", "username", "job_name", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "cpu_start", "cpu_end", "gpu_requested", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
+        columns = ["ip", "name", "username", "job_name", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "taskset", "gpu_requested", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue_job.xlsx", index=False)
         return self.df
@@ -196,25 +196,25 @@ class QueueJob:
 
         
         
-    def __make_script_exc(self, cpu_start:int, cpu_end:int, script:str, gpu_id:int=-1):
+    def __make_script_exc(self, taskset:list, script:str, gpu_id:int=-1):
         return f"""
 import os
 import subprocess
 with open("labmonitor.status", "w") as log: log.write("iniciado  - "+ str(os.getpid()))
 if {gpu_id} == -1:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[0]}.log", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {','.join(map(str, taskset))} sh {script} > {script.split(".")[0]}.log", shell=True)
 else:
-    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {int(cpu_start)}-{int(cpu_end)} sh {script} > {script.split(".")[0]}.log", shell=True)
+    pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {','.join(map(str, taskset))} sh {script} > {script.split(".")[0]}.log", shell=True)
 with open("labmonitor.status", "w") as log: log.write("executando - "+ str(os.getpid()))
 pcs.wait()
 with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ str(os.getpid()))"""
     
 
-    def prepare_job(self, machine_name:str, cpu_start:int, cpu_end:int, script:str, path_exc:str, gpu_id:int=-1):
+    def prepare_job(self, machine_name:str, taskset:list, script:str, path_exc:str, gpu_id:int=-1):
         row = self.machines[self.machines['name'] == machine_name].iloc[0]
         try:
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
-            con.execute_ssh_command(f"echo '{self.__make_script_exc(cpu_start, cpu_end, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
+            con.execute_ssh_command(f"echo '{self.__make_script_exc(taskset, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
             print(f"Preparação concluída em {row['ip']} - {path_exc}")
         except Exception as e:
             print(f"Erro na conexão ao preparar trabalho (srcipt run_labmonitor.py): {e}")
@@ -264,6 +264,23 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             return False
     
 
+    def __get_taskset(self, machine_name:str, n_cpu:int):
+        result_task = []
+        task = self.df.loc[(self.df['name'] == machine_name) & (self.df['status'] == 'executando'), 'taskset']
+        all_task = [int(num) for t in task if isinstance(t, str) for num in t.split(',')]
+        available_cpu = self.data.machines.loc[self.data.machines['name'] == machine_name, 'allowed_cpu'].iloc[0]
+        cpu_add = 0
+        
+        for t in range(int(available_cpu)):
+            if not t in all_task:
+                result_task.append(t)
+                cpu_add += 1
+                if cpu_add == n_cpu: break
+
+        return result_task
+
+
+
     def __esperando(self, index:int):
         n_cpu=self.df.loc[index, 'n_cpu']
         gpu = not pd.isna(self.df.loc[index, 'gpu_requested'])
@@ -281,9 +298,12 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             self.df.loc[index, ['ip', 'name']] = machine[['ip', 'name']]
 
             # pegar start e and CPU e colocar na fila
-            max_cpu_end = self.df.loc[(self.df['name'] == machine['name']) & (self.df['status'] == 'executando'), 'cpu_end'].max()
-            self.df.loc[index, ['cpu_start', 'cpu_end']] = (max_cpu_end+1, n_cpu-1)
-            if pd.isna(self.df.loc[index, 'cpu_start']): self.df.loc[index, 'cpu_start'] = 0
+            task = self.__get_taskset(machine_name=machine['name'], n_cpu=n_cpu)
+            self.df.loc[index, 'taskset'] = ",".join(map(str, task))
+            #max_cpu_end = self.df.loc[(self.df['name'] == machine['name']) & (self.df['status'] == 'executando'), 'cpu_end'].max()
+            #self.df.loc[index, ['cpu_start', 'cpu_end']] = (max_cpu_end+1, n_cpu-1)
+
+            #if pd.isna(self.df.loc[index, 'cpu_start']): self.df.loc[index, 'cpu_start'] = 0
 
             # Atualziar CPUs ocupadas nas maquinas 
             self.data.machines.loc[self.data.machines['name'] == machine['name'], 'cpu_used'] += n_cpu
@@ -321,8 +341,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
             # Iniciar trabalho
             self.prepare_job(machine_name=machine['name'], 
-                            cpu_start=self.df.loc[index, 'cpu_start'], 
-                            cpu_end=self.df.loc[index, 'cpu_end'], 
+                            taskset=task,
                             script=self.df.loc[index, 'script_name'],
                             path_exc=self.df.loc[index, 'path_exc'],
                             gpu_id=self.df.loc[index, 'gpu_index']
@@ -423,7 +442,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
 
 
-    def monitor(self, fist_day:bool=True, last_day:bool=True, send_email:bool=True, feq_time:int=20, now:bool=False):
+    def monitor(self, feq_time:int=300, now:bool=False):
         while not now:
             print(f"Monitorando inicio: {datetime.now()}")
 
