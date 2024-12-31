@@ -134,8 +134,11 @@ def monitor_now():
 st.subheader("Agendamentos")
 st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day']), use_container_width=True, hide_index=True)
 
+def nenhum():
+    pass
+
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento", "Lista de Espera"])
-fun = {"Selecione": print, "Agendar": agendar, "Remover Agendamento": remover_agendamento, "Lista de Espera": lista_espera}
+fun = {"Selecione": nenhum, "Agendar": agendar, "Remover Agendamento": remover_agendamento, "Lista de Espera": lista_espera}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
