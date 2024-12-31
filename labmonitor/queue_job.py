@@ -428,7 +428,22 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         pass
 
     def __finalizado(self, index:int):
-        pass
+        def send():
+            if self.df.loc[index, 'notification_end'] == "N":
+                obs = """
+                Seu trabalho foi finalizado corretamente. 
+                Os arquivos foram copiados para seu diretório de origem."""
+
+                if self.__send_mail(subject=f"Trabalho finalizado - {self.df.loc[index, 'job_name']} | LMDM",
+                                message=self.__make_email_html(df_row=self.df.loc[index], observation=obs),
+                                subtype="html",
+                                to=self.df.loc[index, 'e-mail'],
+                                ): self.df.loc[index, 'notification_end'] = "Y"
+                self.save()
+
+        proc = threading.Thread(target=send)
+        proc.start()
+        
 
     def __nao_finalizado_corretamente(self, index):
         def send():
@@ -438,6 +453,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
                 A falha pode ter sido devido ao uso de mais recursos que solicitado (CPU ou GPU), erro no seu script de execução ou desligamento da máquina. 
                 Os arquivos foram copiados para seu diretório de origem, verifique e faça uma nova submissão à fila. 
                 Caso possível, aproveite os dados produzidos para reiniciar o trabalho."""
+
                 if self.__send_mail(subject=f"Trabalho não finalizado corretamente - {self.df.loc[index, 'job_name']} | LMDM",
                                 message=self.__make_email_html(df_row=self.df.loc[index], observation=obs),
                                 subtype="html",
@@ -448,7 +464,6 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
                 self.df.loc[index, 'status'] = "nao_finalizado_corretamente" 
                 self.save()
                 
-        
         proc = threading.Thread(target=send)
         proc.start()
  
