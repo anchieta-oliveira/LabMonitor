@@ -34,6 +34,7 @@ def submit_job():
         machine_origin = st.selectbox('Máquina de origem', data_g.machines['name'])
         path_origin = st.text_input("Diretorio com arquivos de trabalho (máquina de origem)")
         script_name = st.text_input("Nome do script")
+        job_name = st.text_input("Nome do trabalho")
         username = st.text_input("Username")
         email = st.text_input("e-mail")
         
@@ -45,6 +46,7 @@ def submit_job():
             else:
                 try:
                     queue.submit(username=username,
+                                job_name=job_name,
                                 machine_origin=machine_origin,
                                 script_name=script_name,
                                 path_origin=path_origin,
