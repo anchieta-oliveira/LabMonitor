@@ -77,8 +77,11 @@ st.subheader("Fila de trabalhos")
 st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_name']], use_container_width=True, hide_index=True)
 
 
+def nenhum():
+    pass
+
 action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho"])
-fun = {"Selecione": print, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job}
+fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
