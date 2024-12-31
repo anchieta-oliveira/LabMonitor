@@ -126,8 +126,8 @@ class QueueJob:
             self.data.machines.loc[
                     (self.data.machines['name'] == maq['name']) & 
                     (self.data.machines['ip'] == maq['ip']) & 
-                    (self.data.machines[f"GPU_{maq['gpu_index']}_Name"] == maq['gpu_name']),
-                    f"GPU_{maq['gpu_index']}_status"
+                    (self.data.machines[f"GPU_{int(maq['gpu_index'])}_Name"] == maq['gpu_name']),
+                    f"GPU_{int(maq['gpu_index'])}_status"
                 ] = "executando"
      
 
