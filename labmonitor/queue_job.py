@@ -281,7 +281,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             self.df.loc[index, ['ip', 'name']] = machine[['ip', 'name']]
 
             # pegar start e and CPU e colocar na fila
-            max_cpu_end = self.df[self.df['name'] == machine['name']]['cpu_end'].max()
+            max_cpu_end = self.df.loc[(self.df['name'] == machine['name']) & (self.df['status'] == 'executando'), 'cpu_end'].max()
             self.df.loc[index, ['cpu_start', 'cpu_end']] = (max_cpu_end+1, n_cpu-1)
             if pd.isna(self.df.loc[index, 'cpu_start']): self.df.loc[index, 'cpu_start'] = 0
 
