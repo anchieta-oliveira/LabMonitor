@@ -1,11 +1,14 @@
 import os
 import time
+import smtplib
 import threading
 import pandas as pd
 from datetime import datetime
 from labmonitor.data import Data
+from email.mime.text import MIMEText
 from labmonitor.monitor import Monitor
 from labmonitor.connection import Connection
+from email.mime.multipart import MIMEMultipart
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -452,3 +455,123 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             time.sleep(feq_time)
         else:
             self.__monitor_now()
+
+    def __head_mail(self) -> str:
+        return """<head>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .header {
+                    background-color: #A8D08D; /* verde claro */
+                    color: white;
+                    padding: 10px 0;
+                    text-align: center;
+                }
+                .container {
+                    margin: 20px;
+                }
+                .table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }
+                .table th, .table td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                .table th {
+                    background-color: #f2f2f2;
+                }
+                .footer {
+                    margin-top: 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #777;
+                }
+            </style>
+            <div class="header">
+                <span style="font-size: 24px; font-weight: bold; margin-left: 10px;">Laboratório de Modelagem e Dinâmica Molecular</span>
+            </div>
+        </head>"""
+
+    def __footer_mail(self) -> str:
+        return """<div class="footer">
+            <p>Este é um e-mail automático. Por favor, não responda.</p>
+        </div>"""
+
+    def __make_email_html(self, df_row: pd.Series, title: str = "Agendamento", observation:str=""):
+        return f"""<html>
+        {self.__head_mail()}
+        <body>
+            <div class="container">
+                <h2>{title}</h2>
+                <table class="table">
+                    <tr>
+                        <th>Máquina</th>
+                        <td>{df_row['name']}</td>
+                    </tr>
+                    <tr>
+                        <th>Usuário</th>
+                        <td>{df_row['username']}</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>{df_row['status']}</td>
+                    </tr>
+                    <tr>
+                        <th>Data de submissão</th>
+                        <td>{df_row['submit']}</td>
+                    </tr>
+                    <tr>
+                        <th>Fim</th>
+                        <td>{df_row['fim']}</td>
+                    </tr>
+                    <tr>
+                        <th>CPU</th>
+                        <td>{df_row['n_cpu']}</td>
+                    </tr>
+                    <tr>
+                        <th>GPU</th>
+                        <td>{df_row['gpu_name']} (Índice {df_row['gpu_index']})</td>
+                    </tr>
+                </table>
+                {f'''
+                <div class="observation">
+                    <h3>Observações</h3>
+                    <p>{observation}</p>
+                </div>
+                ''' if observation else ''}
+            </div>
+        {self.__footer_mail()}
+        </body>
+    </html>"""
+
+    def __send_mail(self, subject:str, message:str, to:str, subtype:str="plain") -> bool:
+        try:
+            msg = MIMEMultipart()
+            # setup the parameters of the message
+            self.data.read_email()
+            password = self.data.email['password'] # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
+            msg['From'] = self.data.email['address'] 
+            msg['To'] = to
+            msg['Subject'] = subject
+            
+            # add in the message body
+            msg.attach(MIMEText(message, subtype))
+            
+            #create server
+            server = smtplib.SMTP('smtp.gmail.com: 587')
+            
+            server.starttls()
+            
+            # Login Credentials for sending the mail
+            server.login(msg['From'], password)
+        
+            # send the message via the server.
+            server.sendmail(msg['From'], msg['To'], msg.as_string())
+            server.quit()
+            print (f"Successfully sent email {to}")
+            return True
+        except Exception as e: 
+            print(f"Erro a enviar e-mail: {e}")
+            return False
