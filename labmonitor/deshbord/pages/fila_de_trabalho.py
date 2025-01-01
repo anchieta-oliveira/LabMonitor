@@ -67,7 +67,7 @@ def remove_job():
 def acompanhar():
     global queue
     with st.container(border=True):
-        st.subheader("Acompanahr trabalho")
+        st.subheader("Acompanhar trabalho")
         
         try:
             trabalhos = queue.df[queue.df['status'] == 'executando'].apply(
