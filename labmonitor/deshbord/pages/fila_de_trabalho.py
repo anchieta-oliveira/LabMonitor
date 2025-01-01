@@ -26,10 +26,7 @@ def submit_job():
         for i in queue.data.machines['name_allowed_gpu']:
             gpus.extend(i.split(","))
 
-        for g in gpus:
-            if st.checkbox(g.strip()):
-                selected_gpus.append(g)
-
+        selected_gpus = st.multiselect("Selecione as GPUs requisitadas", gpus)
                 
         machine_origin = st.selectbox('Máquina de origem', data_g.machines['name'])
         path_origin = st.text_input("Diretorio com arquivos de trabalho (máquina de origem)")
