@@ -74,7 +74,7 @@ data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.xlsx")
 queue = QueueJob(data=data)
 
 st.subheader("Fila de trabalhos")
-st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_name']], use_container_width=True, hide_index=True)
+st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_requested', 'gpu_name']], use_container_width=True, hide_index=True)
 
 
 def nenhum():
