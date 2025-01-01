@@ -431,7 +431,23 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         proc.start()
         
         
+    def view_job_log(self, job_row:pd.Series, sufix:str=".log"):
+        machine = self.machines[self.machines['name'] == job_row['name']].iloc[0]
+        try:
+            print(f"Conectando a {machine['ip']}...")
+            con = Connection(ip=machine['ip'], username=machine['username'], password=machine['password'])
+            out = con.execute_ssh_command(f"tail -n 50 {job_row['path_exc']}/*{sufix}")
+            r = {}
+            logs = out.split("==>")
+            for log in logs:
+                l = log.split("<==") + ["", ""]
+                r.update({l[0].split('/')[-1]: l[1]})
+            del r['']
+            return r 
 
+        except Exception as e:
+            print(f"Erro ao conectar para criar ler logs {machine['ip']}: {e}")
+            return {"":""}
 
 
     def __executando(self, index:int):
