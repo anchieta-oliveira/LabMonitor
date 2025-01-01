@@ -207,6 +207,8 @@ with open("labmonitor.status", "w") as log: log.write("iniciado  - "+ str(os.get
 if {gpu_id} == -1:
     pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {','.join(map(str, taskset))} sh {script} > {script.split(".")[0]}.log", shell=True)
 else:
+    with open("{script}", "r") as file: original_content = file.readlines()
+    with open("{script}", "w") as file: file.write("CUDA_VISIBLE_DEVICES={gpu_id};"); file.writelines(original_content)
     pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {','.join(map(str, taskset))} sh {script} > {script.split(".")[0]}.log", shell=True)
 with open("labmonitor.status", "w") as log: log.write("executando - "+ str(os.getpid()))
 pcs.wait()
