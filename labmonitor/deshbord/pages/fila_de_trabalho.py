@@ -64,6 +64,39 @@ def submit_job():
 def remove_job():
     pass
 
+def acompanhar():
+    global queue
+    with st.container(border=True):
+        st.subheader("Acompanahr trabalho")
+        
+        try:
+            trabalhos = queue.df[queue.df['status'] == 'executando'].apply(
+                                        lambda row: f"{row['name']} -  {row['username']} - {row['job_name']} - {row['submit']}",
+                                        axis=1).tolist()
+        except Exception as e:
+            trabalhos = []
+        
+        trabalho = st.selectbox('Escolha o trabalho', trabalhos)
+
+        email = st.text_input("E-mail")
+        sufix = st.text_input("Sufixo dos arquivos", value=".log")
+        remove = st.button("Remover")
+
+        if remove:
+            nome_maquina, usuario, job_name, submit = trabalho.split(' - ')
+
+            row_job = queue.df[(queue.df['name'] == nome_maquina.strip()) & (queue.df['username'] == usuario.strip()) & (queue.df['job_name'] == job_name.strip()) & (queue.df['submit'] == submit.strip())].iloc[0]
+            if not email:
+                st.error("Por favor, preencha todos os campos.")
+            elif email.strip() == row_job['e-mail']:
+                logs = queue.view_job_log(job_row=row_job, sufix="*"+sufix)
+                try:
+                    for log in logs.keys():
+                        with st.expander(log):
+                            st.text(logs[log])
+
+                except Exception as e:
+                    st.error(f"Erro ao ver saída de trabalhos: {e}")
 
 
 
@@ -80,8 +113,8 @@ st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', '
 def nenhum():
     pass
 
-action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho"])
-fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job}
+action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho"])
+fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job, "Acompanhar trabalho": acompanhar}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
