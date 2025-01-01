@@ -80,9 +80,9 @@ def acompanhar():
 
         email = st.text_input("E-mail")
         sufix = st.text_input("Sufixo dos arquivos", value=".log")
-        remove = st.button("Remover")
+        ver = st.button("Ver")
 
-        if remove:
+        if ver:
             nome_maquina, usuario, job_name, submit = trabalho.split(' - ')
 
             row_job = queue.df[(queue.df['name'] == nome_maquina.strip()) & (queue.df['username'] == usuario.strip()) & (queue.df['job_name'] == job_name.strip()) & (queue.df['submit'] == submit.strip())].iloc[0]
