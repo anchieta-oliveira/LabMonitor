@@ -475,9 +475,23 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         proc = threading.Thread(target=send)
         proc.start()
  
+    def __copiando(self):
+        pass
+
+    def __falha_ao_copiar(self):
+        pass
+
 
     def __monitor_now(self):
-        action = {'esperando': self.__esperando, "finalizado_copiar": self.__finalizado_copiar,"executando": self.__executando, "finalizado": self.__finalizado, "nao_finalizado_corretamente": self.__nao_finalizado_corretamente}
+        action = {'esperando': self.__esperando, 
+                  "finalizado_copiar": self.__finalizado_copiar,
+                  "executando": self.__executando, 
+                  "finalizado": self.__finalizado, 
+                  "nao_finalizado_corretamente": self.__nao_finalizado_corretamente,
+                  "copiando":self.__copiando,
+                  "falha_ao_copiar": self.__falha_ao_copiar
+                  }
+        
         self.read_excel()
         self.update_status_machines()
         self.update_status_jobs()
