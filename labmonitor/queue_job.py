@@ -285,7 +285,21 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         return result_task
 
 
+    # Limitações usuários  
+    def __limit_per_user(self, index:int, limit:int=2) -> bool:
+        row = self.df.loc[index]
+        jobs_user_exc = self.df.loc[(self.df['username'] == row['username']) & (self.df['status'] == 'executando'), 'username'].shape[0]
+        if jobs_user_exc >= limit: return False
+        else: return True
 
+    def limit_job(self, index, limit_per_user:bool=True, job_limit_per_user:int=2) -> bool:
+        res = []
+        if limit_per_user: res.append(self.__limit_per_user(index, limit=job_limit_per_user))
+
+        return all(res)
+    
+
+    # Ações status
     def __esperando(self, index:int):
         n_cpu=self.df.loc[index, 'n_cpu']
         gpu = not pd.isna(self.df.loc[index, 'gpu_requested'])
@@ -516,6 +530,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         print(self.df)
         
         for i, row in self.df.iterrows():
+            if not self.limit_job(index=i): continue
             action[row['status']](index=i)
 
 
