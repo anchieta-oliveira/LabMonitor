@@ -105,6 +105,12 @@ class QueueJob:
                     if self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0]
                 row[f"GPU_{gpu_index}_status"] = sts
 
+            if len(row.keys()) == 1:
+                row['GPU_0_Name'] = "Null"; row['GPU_0_status'] = ""
+                if f"GPU_0_status" in self.data.machines.columns: 
+                    if self.data.machines[self.data.machines['name'] == name][f"GPU_0_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_0_status"].iloc[0]
+                row[f"GPU_0_status"] = sts
+
             data_gpu.append(row)
 
         self.data.machines = pd.merge(self.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
@@ -126,6 +132,7 @@ class QueueJob:
     def __status_in_queue(self):
         v = self.df[self.df['status'] == "executando"]
         for i, maq in v.iterrows():
+            if pd.isna(self.df.loc[i, ['gpu_index']]): self.df.loc[i, ['gpu_index']] = 0
             self.data.machines.loc[
                     (self.data.machines['name'] == maq['name']) & 
                     (self.data.machines['ip'] == maq['ip']) & 
@@ -217,6 +224,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
     def prepare_job(self, machine_name:str, taskset:list, script:str, path_exc:str, gpu_id:int=-1):
         row = self.machines[self.machines['name'] == machine_name].iloc[0]
+        if pd.isna(gpu_id): gpu_id = -1
         try:
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             con.execute_ssh_command(f"echo '{self.__make_script_exc(taskset, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
@@ -452,7 +460,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         try:
             print(f"Conectando a {machine['ip']}...")
             con = Connection(ip=machine['ip'], username=machine['username'], password=machine['password'])
-            out = con.execute_ssh_command(f"tail -n 50 {job_row['path_exc']}/*{sufix}")
+            out = con.execute_ssh_command(f"tail -v -n 30 {job_row['path_exc']}/*{sufix}")
             r = {}
             logs = out.split("==>")
             for log in logs:
