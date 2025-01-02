@@ -1,3 +1,4 @@
+import os
 import sys
 import pandas as pd
 import streamlit as st
@@ -96,6 +97,25 @@ def acompanhar():
                     st.error(f"Erro ao ver saída de trabalhos: {e}")
 
 
+def script_exemple():
+    with st.container():
+        st.subheader("Exemplo de Script")
+        path = "./labmonitor/example/script/"
+        
+        if os.path.exists(path):
+            for file in os.listdir(path):
+                with st.expander(file):
+                    with open(os.path.join(path, file), 'r') as f:
+                        file_content = f.read()  # Leia o conteúdo uma única vez
+                        st.text(file_content)
+                        st.download_button(
+                            label="Download arquivo",
+                            data=file_content,
+                            file_name=file,
+                            mime='text/plain'
+                        )
+
+
 
 # Exc 
 st.sidebar.markdown("# Fila de trabalhos")
@@ -110,8 +130,8 @@ st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', '
 def nenhum():
     pass
 
-action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho", ])
-fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job, "Acompanhar trabalho": acompanhar}
+action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho", "Exemplos de Script"])
+fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job, "Acompanhar trabalho": acompanhar, "Exemplos de Script": script_exemple}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
