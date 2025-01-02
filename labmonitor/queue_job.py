@@ -493,10 +493,10 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         proc = threading.Thread(target=send)
         proc.start()
  
-    def __copiando(self):
+    def __copiando(self, index):
         pass
 
-    def __falha_ao_copiar(self):
+    def __falha_ao_copiar(self, index):
         pass
 
 
