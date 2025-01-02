@@ -523,6 +523,11 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
     def __falha_ao_copiar(self, index):
         pass
 
+    def __iniciado(self, index):
+        pass
+
+    def __nenhum(self, index):
+        pass
 
     def __monitor_now(self):
         action = {'esperando': self.__esperando, 
@@ -531,7 +536,9 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
                   "finalizado": self.__finalizado, 
                   "nao_finalizado_corretamente": self.__nao_finalizado_corretamente,
                   "copiando":self.__copiando,
-                  "falha_ao_copiar": self.__falha_ao_copiar
+                  "falha_ao_copiar": self.__falha_ao_copiar,
+                  "iniciado": self.__iniciado,
+                  "": self.__nenhum
                   }
         
         self.read_excel()
