@@ -368,13 +368,15 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
             pid = self.star_job(machine_name=machine['name'], path_exc=self.df.loc[index, 'path_exc'])
             self.df.loc[index, ['pid']] = pid
-            if self.__send_mail(subject=f"Seu trabalho começou {self.df.loc[index, 'job_name']} | LMDM",
-                            message=self.__make_email_html(df_row=self.df.loc[index],
-                                                            title="Inicio do trabalho",                                                            
-                                                            ),
-                            to=self.df.loc[index, 'e-mail'],
-                            subtype="html"):
-                self.df.loc[index, 'notification_start'] = "Y"
+
+            if self.df.loc[index, 'notification_start'] == "N":
+                if self.__send_mail(subject=f"Seu trabalho começou {self.df.loc[index, 'job_name']} | LMDM",
+                                message=self.__make_email_html(df_row=self.df.loc[index],
+                                                                title="Inicio do trabalho",                                                            
+                                                                ),
+                                to=self.df.loc[index, 'e-mail'],
+                                subtype="html"):
+                    self.df.loc[index, 'notification_start'] = "Y"
             
             self.data.save_machines() 
             self.save()
