@@ -176,7 +176,8 @@ class QueueJob:
             
             filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
                                                        gpu_status_available & 
-                                                       gpu_name_match]
+                                                       gpu_name_match & 
+                                                       ~self.data.machines[gpu_name_cols].eq("Null").any(axis=1) ]
             return filtered_machines
         
         else:
