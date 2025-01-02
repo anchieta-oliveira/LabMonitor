@@ -239,7 +239,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             print(f"Verificando status do job em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             status, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
-            if (not pid in con.execute_ssh_command(f"ps -p {pid}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"; con.execute_ssh_command(f"echo '{status} - {pid}' > {path_exc}/labmonitor.status")
+            if (not pid.strip() in con.execute_ssh_command(f"ps -p {pid.strip()}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"; con.execute_ssh_command(f"echo '{status} - {pid}' > {path_exc}/labmonitor.status")
             con.ssh.close()
             return status.strip(), int(pid)
         except Exception as e:
@@ -300,7 +300,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         if jobs_user_exc >= limit: return False
         else: return True
 
-    def limit_job(self, index, limit_per_user:bool=True, job_limit_per_user:int=2) -> bool:
+    def limit_job(self, index, limit_per_user:bool=True, job_limit_per_user:int=3) -> bool:
         res = []
         if limit_per_user: res.append(self.__limit_per_user(index, limit=job_limit_per_user))
 
