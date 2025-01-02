@@ -110,7 +110,7 @@ st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', '
 def nenhum():
     pass
 
-action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho"])
+action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho", ])
 fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job, "Acompanhar trabalho": acompanhar}
 
 if "action_state" not in st.session_state: 
