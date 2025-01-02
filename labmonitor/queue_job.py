@@ -132,7 +132,7 @@ class QueueJob:
     def __status_in_queue(self):
         v = self.df[self.df['status'] == "executando"]
         for i, maq in v.iterrows():
-            if pd.isna(self.df.loc[i, ['gpu_index']]): self.df.loc[i, ['gpu_index']] = 0
+            if pd.isna(maq['gpu_index']): self.df.loc[i, ['gpu_index']] = 0; maq['gpu_index'] = 0
             self.data.machines.loc[
                     (self.data.machines['name'] == maq['name']) & 
                     (self.data.machines['ip'] == maq['ip']) & 
