@@ -174,10 +174,17 @@ class QueueJob:
             if gpu_name[0] != "all": gpu_name_match = self.data.machines[gpu_name_cols].isin(gpu_name).any(axis=1) 
             else: gpu_name_match = self.data.machines[gpu_name_cols].any(axis=1) 
             
-            filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
-                                                       gpu_status_available & 
-                                                       gpu_name_match & 
-                                                       ~self.data.machines[gpu_name_cols].eq("Null").any(axis=1) ]
+            if gpu_name[0] == "all" or gpu_name != ["Null"]:
+                filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
+                                                        gpu_status_available & 
+                                                        gpu_name_match & 
+                                                        ~self.data.machines[gpu_name_cols].eq("Null").any(axis=1)]
+            else:                 
+                filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
+                                                        gpu_status_available & 
+                                                        gpu_name_match
+                                                        ]
+
             return filtered_machines
         
         else:
