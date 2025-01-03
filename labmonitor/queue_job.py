@@ -160,15 +160,27 @@ class QueueJob:
         self.data.save_machines()
 
 
-    def search_available_machine(self, n_cpu:int, gpu:bool = False, gpu_name:list = ["all"], cpu_reserve:bool=True, n_cpu_reserve:int = 6):
+    def search_available_machine(self, n_cpu:int, gpu:bool = False, gpu_name:list = ["all"], cpu_reserve:bool=True, n_cpu_reserve:int=0):
         self.data.read_machines(self.data.path_machines)
     
-        available_cpu = self.data.machines.loc[((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= n_cpu)]
-        
-        if gpu and cpu_reserve:
-            # Regra para para usar cpu mesmo sem cpu disponivel. É necessario ter o extra de cpu (não listado no 'allowed_cpu'). 
-            if available_cpu.shape[0] == 0 and n_cpu <= n_cpu_reserve:
-                available_cpu = self.data.machines.loc[((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= 0)]
+        if cpu_reserve:
+            available_cpu = self.data.machines.loc[
+                (
+                    ((self.data.machines['allowed_cpu'] - n_cpu_reserve) - self.data.machines['cpu_used']) >= n_cpu
+                ) | (
+                    (
+                        self.data.machines.loc[:, self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)]
+                        .apply(lambda col: col.str.contains("Null", case=False, na=False))
+                        .any(axis=1)
+                    ) &
+                    ((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= n_cpu)
+                )
+            ]
+
+        else: available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
+
+        if gpu:
+            if cpu_reserve and n_cpu_reserve >= n_cpu: available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
 
             gpu_status_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
             gpu_name_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
@@ -328,7 +340,8 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
         machines = self.search_available_machine(n_cpu=n_cpu,
                                       gpu=gpu,
-                                      gpu_name=gpu_name
+                                      gpu_name=gpu_name,
+                                      n_cpu_reserve=6
                                       )
         
         if machines.shape[0] > 0:
