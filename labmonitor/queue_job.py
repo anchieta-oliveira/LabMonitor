@@ -160,12 +160,16 @@ class QueueJob:
         self.data.save_machines()
 
 
-    def search_available_machine(self, n_cpu:int, gpu:bool = False, gpu_name:list = ["all"]):
+    def search_available_machine(self, n_cpu:int, gpu:bool = False, gpu_name:list = ["all"], cpu_reserve:bool=True, n_cpu_reserve:int = 6):
         self.data.read_machines(self.data.path_machines)
     
         available_cpu = self.data.machines.loc[((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= n_cpu)]
         
-        if gpu:
+        if gpu and cpu_reserve:
+            # Regra para para usar cpu mesmo sem cpu disponivel. É necessario ter o extra de cpu (não listado no 'allowed_cpu'). 
+            if available_cpu.shape[0] == 0 and n_cpu <= n_cpu_reserve:
+                available_cpu = self.data.machines.loc[((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= 0)]
+
             gpu_status_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
             gpu_name_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
             
