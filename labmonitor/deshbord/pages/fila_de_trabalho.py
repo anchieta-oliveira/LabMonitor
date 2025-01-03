@@ -91,7 +91,10 @@ def acompanhar():
                 try:
                     for log in logs.keys():
                         with st.expander(log):
-                            st.text(logs[log])
+                            st.markdown(
+                                    f"<p style='font-size:16px;'>{logs[log].replace("\n", "<br>")}</p>",
+                                    unsafe_allow_html=True
+                                )
 
                 except Exception as e:
                     st.error(f"Erro ao ver saída de trabalhos: {e}")
@@ -106,7 +109,7 @@ def script_exemple():
             for file in os.listdir(path):
                 with st.expander(file):
                     with open(os.path.join(path, file), 'r') as f:
-                        file_content = f.read()  # Leia o conteúdo uma única vez
+                        file_content = f.read()
                         st.text(file_content)
                         st.download_button(
                             label="Download arquivo",
