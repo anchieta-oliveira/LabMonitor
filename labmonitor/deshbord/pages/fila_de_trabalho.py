@@ -95,9 +95,11 @@ def acompanhar():
                                     f"<p style='font-size:16px;'>{logs[log].replace("\n", "<br>")}</p>",
                                     unsafe_allow_html=True
                                 )
-
                 except Exception as e:
                     st.error(f"Erro ao ver saída de trabalhos: {e}")
+            
+            elif email.strip() != row_job['e-mail']:
+                st.error("E-mail indicando não corresponde ao cadastrado!")
 
 
 def script_exemple():
