@@ -113,7 +113,7 @@ class QueueJob:
 
             data_gpu.append(row)
 
-        self.data.machines = pd.merge(self.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
+        self.data.machines = pd.merge(self.data.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
         self.data.save_machines()
 
     def __allowed_gpu(self):
@@ -153,6 +153,7 @@ class QueueJob:
 
 
     def update_status_machines(self):
+        self.data.read_machines(self.data.path_machines)
         self.update_gpu()
         self.__allowed_gpu()
         self.__update_cpu_used()
@@ -247,7 +248,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
     
 
     def prepare_job(self, machine_name:str, taskset:list, script:str, path_exc:str, gpu_id:int=-1):
-        row = self.machines[self.machines['name'] == machine_name].iloc[0]
+        row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
         if pd.isna(gpu_id): gpu_id = -1
         try:
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
@@ -258,7 +259,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
 
     def get_status_job(self, machine_name:str, path_exc:str):
-        row = self.machines[self.machines['name'] == machine_name].iloc[0]
+        row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
         try:
             print(f"Verificando status do job em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
@@ -272,7 +273,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
 
     def star_job(self, machine_name:str, path_exc:str)  -> int:
-        row = self.machines[self.machines['name'] == machine_name].iloc[0]
+        row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
         try:
             print(f"Iniciando trabalho em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
@@ -289,7 +290,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
     
 
     def __make_dir_exc(self, machine_exc:str, dir_exc:str):
-        row = self.machines[self.machines['name'] == machine_exc].iloc[0]
+        row = self.data.machines[self.data.machines['name'] == machine_exc].iloc[0]
         try:
             print(f"Conectando a {row['ip']}...")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
@@ -481,7 +482,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         
         
     def view_job_log(self, job_row:pd.Series, sufix:str=".log"):
-        machine = self.machines[self.machines['name'] == job_row['name']].iloc[0]
+        machine = self.data.machines[self.data.machines['name'] == job_row['name']].iloc[0]
         try:
             print(f"Conectando a {machine['ip']}...")
             con = Connection(ip=machine['ip'], username=machine['username'], password=machine['password'])
