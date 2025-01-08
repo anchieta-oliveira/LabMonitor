@@ -125,7 +125,9 @@ class QueueJob:
                 for name in g_names[i]:
                     if name == self.data.machines[c].iloc[i]:
                         self.data.machines.loc[i, c.replace("Name", "status")] = "disponivel"
-                    elif name != self.data.machines[c].iloc[i] and pd.isna(self.data.machines[c].iloc[i]): 
+                    elif name != self.data.machines[c].iloc[i]: 
+                        self.data.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
+                    elif pd.isna(self.data.machines[c].iloc[i]):
                         self.data.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
 
 
