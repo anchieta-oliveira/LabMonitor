@@ -404,6 +404,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
             pid = self.star_job(machine_name=machine['name'], path_exc=self.df.loc[index, 'path_exc'])
             self.df.loc[index, ['pid']] = pid
+            self.df.loc[index, ['inicio']] = datetime.now()
 
             if self.df.loc[index, 'notification_start'] == "N":
                 if self.__send_mail(subject=f"Seu trabalho começou {self.df.loc[index, 'job_name']} | LMDM",
@@ -521,6 +522,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
         proc = threading.Thread(target=send)
         proc.start()
+        self.df.loc[index, ['fim']] = datetime.now()
 
 
     def __nao_finalizado_corretamente(self, index):
