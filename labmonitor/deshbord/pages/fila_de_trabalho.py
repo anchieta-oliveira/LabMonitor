@@ -31,7 +31,7 @@ def submit_job():
                 
         machine_origin = st.selectbox('Máquina de origem', data_g.machines['name'])
         path_origin = st.text_input("Diretorio com arquivos de trabalho (máquina de origem)")
-        script_name = st.text_input("Nome do script")
+        script_name = st.text_input("Nome do script (.sh)")
         job_name = st.text_input("Nome do trabalho")
         username = st.text_input("Username")
         email = st.text_input("e-mail")
@@ -121,6 +121,21 @@ def script_exemple():
                         )
 
 
+def instru():
+    txt = """
+    1 - Verifique os programas disponíveis e como chamá-los nos scripts de uso.
+    2 - Sempre o index da GPU será "0", designe este para aplicação, caso necessário.
+    3 - Verifique a funcionalidade dos script (.sh). Caso ele falhe, a fila continuará normalmente, você terá que alocar novamente a fila.
+    4 - Ao finalizar o trabalho (com sucesso ou falha) os arquivos serão copiados automaticamente para a máquina de origem, no mesmo diretório. Não altere o local do diretório na máquina de origem até o trabalho ser finalizado. Garanta que tenha espaço para receber os resultados. 
+    5 - Você será notificado por e-mail ao finalizar o trabalho (com sucesso ou falha).
+    6 - Caso seu trabalho falhe, verifique os resultados, corrija e submeta novamente à fila.
+    7 - Não é possível direcionar especificamente a máquina que receberá o trabalho, mas pode-se selecionar o recurso, por exemplo, uma ou mais GPUs específicas.
+    8- Sempre coloque o mesmo nome de usuário.
+    """
+
+    with st.expander(f"Instruções de uso"):
+        st.text(txt)
+
 
 # Exc 
 st.sidebar.markdown("# Fila de trabalhos")
@@ -145,3 +160,5 @@ try:
     fun[action]()
 except Exception as e:
     st.error(f"Erro ao selecionar ação: {e}")
+
+instru()
