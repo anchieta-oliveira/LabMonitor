@@ -17,7 +17,15 @@ class Data:
 
     def save_machines(self, path:str=f""):
         if path == "": path = self.path_machines
-        self.machines.to_excel(path, index=False)
+        backup_path = f"{os.path.splitext(path)[0]}_old{os.path.splitext(path)[1]}"
+    
+        try:
+            if os.path.exists(path): os.rename(path, backup_path)
+            self.machines.to_excel(path, index=False)
+            
+        except Exception as e:
+            print("Erro ao salvar o arquivo:", e)
+
 
     def read_email(self, path:str=f"{current_dirname_path}/../email.json"):
         try:
