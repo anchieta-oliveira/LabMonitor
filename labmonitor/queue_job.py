@@ -463,6 +463,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             
             if copiado:
                 cmd = f"echo 'finalizado - {pid}' > {path_exc}/labmonitor.status"
+                self.read_excel()
                 self.df.loc[index, ['status']] = 'finalizado'; self.save()
                 self.__finalizado(index)
                 
