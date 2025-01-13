@@ -5,17 +5,17 @@ PT: Aplicação para gerenciamento de recursos computacionais de laboratório em
 
 EN:
 LabMonitor allows you to: 
-    - Collect and store usage information from Linux machines in real time.
-    - Schedule the use of computing resources.
-    - Automatic and easy job queue management on multiple Linux machines.
-    - Dashboard for submitting and monitoring jobs, viewing statistics, managing computer resources and users. 
+- Collect and store usage information from Linux machines in real time.
+- Schedule the use of computing resources.
+- Automatic and easy job queue management on multiple Linux machines.
+- Dashboard for submitting and monitoring jobs, viewing statistics, managing computer resources and users. 
 
 PT:
 LabMonitor permite: 
-    - Coletar e armazenar informações de uso de máquinas Linux em tempo real.
-    - Agendar utilização de recursos computacionais.
-    - Gerenciamento automático e fácil de fila de trabalhos em múltiplas máquinas Linux.
-    - Dashboard para submeter e acompanhar trabalhos, visualizar estatísticas, gerenciar recursos computacionais e usuários.
+- Coletar e armazenar informações de uso de máquinas Linux em tempo real.
+- Agendar utilização de recursos computacionais.
+- Gerenciamento automático e fácil de fila de trabalhos em múltiplas máquinas Linux.
+- Dashboard para submeter e acompanhar trabalhos, visualizar estatísticas, gerenciar recursos computacionais e usuários.
 
 
 ```sh
