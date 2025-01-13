@@ -695,15 +695,20 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             reached or exceeded the limit.
         """
         row = self.df.loc[index]
-        user_filter = self.data.users.loc[self.data.users['username'] == row['username'], 'simultaneous_jobs_limit']
-        user_filter_default = self.data.users.loc[self.data.users['username'] == 'default', 'simultaneous_jobs_limit']
+        user_filter = self.data.users.loc[self.data.users['username'] == row['username'], ['simultaneous_jobs_limit', 'gpu_limit', 'cpu_limit']]
+        user_filter_default = self.data.users.loc[self.data.users['username'] == 'default', ['simultaneous_jobs_limit', 'gpu_limit', 'cpu_limit']]
 
-        if not user_filter.empty: limit = user_filter.iloc[0]
-        elif not user_filter.empty: limit = user_filter_default.iloc[0]
+        if not user_filter.empty: limit = user_filter.iloc[0]['simultaneous_jobs_limit']; gpu_limit = user_filter.iloc[0]['gpu_limit']
+        elif not user_filter_default.empty: limit = user_filter_default.iloc[0]['simultaneous_jobs_limit']; gpu_limit = user_filter_default.iloc[0]['gpu_limit']
 
         jobs_user_exc = self.df.loc[(self.df['username'] == row['username']) & (self.df['status'] == 'executando'), 'username'].shape[0]
-        if jobs_user_exc >= limit: return False
-        else: return True
+        jobs_user_gpus = self.df.loc[(self.df['username'] == row['username']) & (self.df['status'] == 'executando') & (self.df['gpu_name'].notna() & (self.df['gpu_name'] != '')), 'gpu_name'].shape[0]
+
+        if jobs_user_exc < limit: 
+            if jobs_user_gpus > gpu_limit and not pd.isna(row['gpu_requested']): 
+                return False
+            return True
+        else: return False
 
     def limit_job(self, index, limit_per_user:bool=True, job_limit_per_user:int=3) -> bool:
         """
