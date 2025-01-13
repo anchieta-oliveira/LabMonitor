@@ -695,6 +695,12 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             reached or exceeded the limit.
         """
         row = self.df.loc[index]
+        user_filter = self.data.users.loc[self.data.users['username'] == row['username'], 'simultaneous_jobs_limit']
+        user_filter_default = self.data.users.loc[self.data.users['username'] == 'default', 'simultaneous_jobs_limit']
+
+        if not user_filter.empty: limit = user_filter.iloc[0]
+        elif not user_filter.empty: limit = user_filter_default.iloc[0]
+
         jobs_user_exc = self.df.loc[(self.df['username'] == row['username']) & (self.df['status'] == 'executando'), 'username'].shape[0]
         if jobs_user_exc >= limit: return False
         else: return True
