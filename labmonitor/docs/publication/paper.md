@@ -40,15 +40,10 @@ aas-journal: Astrophysical Journal <- The name of the AAS journal.
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+EN: The efficient management of computing resources is a significant challenge, especially in the academic environment, where there are often no professionals dedicated to this task. In many research labs, Linux machines are connected locally or via the internet, creating a decentralized network of computing resources. To facilitate the management and monitoring of these machines, we have developed a Python application that offers a simplified and accessible solution. The application eliminates the need to install software on multiple machines and allows for active and specialized management of computing resources. In addition to the Python library, LabMonitor includes an intuitive dashboard that allows you to view, manage and submit computational jobs centrally. Initial configuration is simple and can be done by filling in the machine information in a spreadsheet and executing a single command. This tool was designed to meet the needs of researchers, providing a user-friendly and efficient interface for managing resources on multiple Linux machines.
+
+PT: O gerenciamento eficiente de recursos computacionais é um desafio significativo, especialmente no ambiente acadêmico, onde muitas vezes não há profissionais dedicados para essa tarefa. Em muitos laboratórios de pesquisa, máquinas Linux estão conectadas localmente ou via internet, criando uma rede descentralizada de recursos computacionais. Para facilitar o gerenciamento e monitoramento dessas máquinas, desenvolvemos uma aplicação em Python que oferece uma solução simplificada e acessível. A aplicação elimina a necessidade de instalação de software em múltiplas máquinas e permite um gerenciamento ativo e especializado dos recursos computacionais. O LabMonitor, além da biblioteca Python, inclui um Dashboard intuitivo que permite visualizar, gerenciar e submeter trabalhos computacionais de forma centralizada. A configuração inicial é simplificada, podendo ser realizada através do preenchimento de informações das máquinas em uma planilha e a execução de um único comando. Esta ferramenta foi projetada para atender às necessidades de pesquisadores, fornecendo uma interface amigável e eficiente para o gerenciamento de recursos em várias máquinas Linux.
+
 
 # Statement of need
 
