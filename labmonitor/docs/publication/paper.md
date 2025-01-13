@@ -47,42 +47,16 @@ PT: O gerenciamento eficiente de recursos computacionais é um desafio significa
 
 # Statement of need
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+EN: Managing computing resources in academic environments is an essential task, especially when several machines are networked to carry out intensive scientific work. Tools such as Slurm and HTCondor are widely used to manage work queues and allocate computing cluster resources. Slurm, for example, is a robust tool designed for managing computer clusters, where the machines are usually centralized and connected by high-speed networks. However, this solution is not ideal for decentralized networks, where machines may be scattered in different locations and connected via the internet. On the other hand, HTCondor is known for its flexibility in managing pools of heterogeneous machines, including decentralized networks. However, its configuration and operation can be complex, requiring significant technical knowledge to fine-tune the various options available.
+Although these tools are powerful, the complexity of their configuration and operation can be a barrier for many users in academic environments, where specialized technical support is not always available. To fill this gap, we developed LabMonitor, a Python application designed to simplify the management of computing resources in decentralized networks of Linux machines.
+LabMonitor, a Python application that is intuitive and easy to use, eliminating the need for complex configurations. Initial configuration can be done by filling in a spreadsheet with information about the machines and, optionally, the users. With the execution of a single command, the system is ready to use, allowing users to manage and monitor resources via a graphical platform. Submitting jobs to LabMonitor is done via a simple interface, which also offers e-mail notifications to update users on the status of their jobs. In addition, the system includes a resource scheduling feature, allowing users to reserve machines for specific tasks. This scheduling feature provides a structured way of planning the use of computing resources. By simplifying the process of managing computing resources, LabMonitor becomes a valuable tool for researchers who want to maximize the use of their machines without the need for advanced technical expertise. This allows researchers to devote themselves to the object of their research and not to the difficulties of managing computing resources.
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
 
-# Mathematics
+PT: O gerenciamento de recursos computacionais em ambientes acadêmicos é uma tarefa essencial, especialmente quando diversas máquinas estão conectadas em rede para executar trabalhos científicos intensivos. Ferramentas como Slurm e HTCondor são amplamente utilizadas para gerenciar filas de trabalho e alocar recursos de clusters de computação. O Slurm, por exemplo, é uma ferramenta robusta projetada para o gerenciamento de clusters de computadores, onde as máquinas estão geralmente centralizadas e conectadas por redes de alta velocidade. No entanto, essa solução não é ideal para redes descentralizadas, onde máquinas podem estar espalhadas em diferentes locais e conectadas via internet. Por outro lado, o HTCondor é conhecido por sua flexibilidade em gerenciar pools de máquinas heterogêneas, incluindo redes descentralizadas. Contudo, sua configuração e operação podem ser complexas, exigindo um conhecimento técnico significativo para o ajuste fino das diversas opções disponíveis.
+Embora essas ferramentas sejam poderosas, a complexidade de sua configuração e operação pode ser uma barreira para muitos usuários em ambientes acadêmicos, onde o suporte técnico especializado nem sempre está disponível. Para preencher essa lacuna, desenvolvemos o LabMonitor, uma aplicação em Python projetada para simplificar o gerenciamento de recursos computacionais em redes descentralizadas de máquinas Linux.
+O LabMonitor, aplicação em Python intuitiva e fácil de usar, eliminando a necessidade de configurações complexas. A configuração inicial pode ser realizada preenchendo uma planilha com informações das máquinas e, opcionalmente, dos usuários. Com a execução de um único comando, o sistema está pronto para uso, permitindo aos usuários gerenciar e monitorar recursos por uma plataforma gráfica. A submissão de trabalhos no LabMonitor é feita por uma interface simples, que também oferece notificações por e-mail para atualizar os usuários sobre o status de seus trabalhos. Além disso, o sistema inclui uma funcionalidade de agendamento de recursos, permitindo que os usuários reservem máquinas para tarefas específicas. Esse recurso de agendamento fornece uma maneira estruturada de planejar o uso de recursos computacionais. Ao simplificar o processo de gerenciamento de recursos computacionais, o LabMonitor torna-se uma ferramenta valiosa para pesquisadores que desejam maximizar a utilização de suas máquinas sem a necessidade de expertise técnica avançada. Isso permite que os pesquisadores possam dedicar-se ao objeto de pesquisa e não às dificuldades de gerenciamento de recursos computacionais.
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
 
-Double dollars make self-standing equations:
-
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
-
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
 
 # Citations
 
