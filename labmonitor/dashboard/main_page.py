@@ -1,13 +1,34 @@
+""" Main page of the dashboard """
+
+# Imports
+############################################################################################################
 import sys
 sys.path.append(sys.argv[1])
 import pandas as pd
 import streamlit as st
+
 from labmonitor.data import Data
 from labmonitor.monitor import Monitor
 from labmonitor.connection import Connection
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def run(ip, name, user, pw):
+# Functions
+############################################################################################################
+
+def run(ip: str, name: str, user: str, pw: str) -> tuple[str, dict]:
+    """ Run the monitor for a given machine
+
+    Args:
+    - ip (str): IP address of the machine
+    - name (str): Name of the machine
+    - user (str): Username to connect to the machine
+    - pw (str): Password to connect to the machine
+
+    Returns:
+    - name (str): Name of the machine
+    - results (dict): Dictionary with the results of the monitor
+    """
+
     try:
         print(f"Conectando a {ip}...")
         results = {}
@@ -39,6 +60,8 @@ def run(ip, name, user, pw):
 
     return name, results
 
+# Main
+############################################################################################################
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
 

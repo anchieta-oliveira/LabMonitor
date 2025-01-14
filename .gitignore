@@ -4,3 +4,6 @@
 *.nbc
 *.nbi
 *machines.xlsx
+
+# Documentation
+/docs/build

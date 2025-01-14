@@ -1,3 +1,7 @@
+""" Monitor history module """
+
+# Imports
+############################################################################################################
 import os
 import time
 import pandas as pd
@@ -8,7 +12,23 @@ from labmonitor.connection import Connection
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-def run(ip, name, user, pw):
+# Functions
+############################################################################################################
+
+def run(ip: str, name: str, user: str, pw: str) -> tuple[str, dict]:
+    """ Run the monitor for a given machine 
+    
+    Args:
+    - ip (str): IP address of the machine
+    - name (str): Name of the machine
+    - user (str): Username to connect to the machine
+    - pw (str): Password to connect to the machine
+
+    Returns:
+    - name (str): Name of the machine
+    - results (dict): Dictionary with the results of the monitor
+    """
+
     try:
         print(f"Conectando a {ip}...")
         results = {}
@@ -40,7 +60,17 @@ def run(ip, name, user, pw):
 
     return name, results
 
-def save_to_excel(results, filepath):
+def save_to_excel(results: dict, filepath: str) -> None:
+    """ Save the results to an Excel file
+
+    Args:
+    - results (dict): Dictionary with the results of the monitor
+    - filepath (str): Path to the Excel file
+
+    Returns:
+    - None
+    """
+
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     data = []
 
@@ -74,7 +104,16 @@ def save_to_excel(results, filepath):
     print(f"Dados salvos em {filepath}")
 
 
-def exec_monitor_history(path):
+def exec_monitor_history(path: str) -> None:
+    """ Execute the monitor history process
+
+    Args:
+    - path (str): Path to the Excel file with the machines information
+
+    Returns:
+    - None
+    """
+
     while True:
         data = Data()
         data.read_machines(path=f"{os.path.dirname(os.path.abspath(__file__))}/../machines.xlsx")
