@@ -1,8 +1,14 @@
+""" QueueJob class for managing job queue information and interacting with machine configurations. """
+
+# Imports
+############################################################################################################
+
 import os
 import time
 import smtplib
 import threading
 import pandas as pd
+
 from datetime import datetime
 from labmonitor.data import Data
 from email.mime.text import MIMEText
@@ -12,9 +18,11 @@ from email.mime.multipart import MIMEMultipart
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
-
+# Class
+############################################################################################################
 class QueueJob:
-    """
+    """ QueueJob class for managing job queue information and interacting with machine configurations.
+
     Class that manages job queue information and interacts with data regarding machine configurations 
     and job submissions. It allows reading job data from an Excel file, managing job states, and interacting 
     with the machine configurations to update job status.
@@ -26,18 +34,30 @@ class QueueJob:
     - machines (pd.DataFrame): DataFrame containing machine configurations from `data.machines`.
 
     Methods:
-    - __init__(self, data:Data, path:str="queue_job.xlsx"): Constructor for initializing the QueueJob object.
-    - read_excel(self, path:str) -> pd.DataFrame: Reads job queue data from an Excel file and returns it as a DataFrame.
+    - __init__(self, data: Data, path: str = "queue_job.xlsx"): Constructor for initializing the QueueJob object.
+    - read_excel(self, path: str) -> pd.DataFrame: Reads job queue data from an Excel file and returns it as a DataFrame.
     """
-    def __init__(self, data:Data, path:str="queue_job.xlsx"):
+
+    def __init__(self, data: Data, path: str = "queue_job.xlsx") -> None:
+        """ Constructor for the QueueJob class.
+
+        Initializes the QueueJob object with the specified Data object and Excel file path.
+
+        Args:
+        data (Data): An instance of the Data class that holds machine and email information.
+        path (str): The file path for the Excel file storing the queue data. Defaults to "queue_job.xlsx".
+
+        Returns:
+        None
+        """
+
         self.df = self.read_excel(path)
         self.path = path
         self.data = data
         self.machines = data.machines
 
-    def read_excel(self, path:str="queue_job.xlsx") -> pd.DataFrame:
-        """
-        Reads an Excel file and processes its contents into a DataFrame.
+    def read_excel(self, path: str = "queue_job.xlsx") -> pd.DataFrame:
+        """ Reads an Excel file and processes its contents into a DataFrame.
         
         Parameters:
         - path (str): The file path to the Excel file. Defaults to "queue_job.xlsx".
@@ -50,28 +70,38 @@ class QueueJob:
         - Converts the 'fim' and 'inicio' columns to datetime objects for proper handling of date and time data.
         - If the file does not exist, it resets the DataFrame using the `reset` method.
         """
+
         if os.path.exists(path):
             self.df = pd.read_excel(path)
             self.df['fim'] = self.df['fim'] = pd.to_datetime(self.df['fim'])
             self.df['inicio'] = self.df['inicio'] = pd.to_datetime(self.df['inicio'])
         else:
             self.reset()
+
         return self.df
 
-    def save(self):
-        """
-        Saves the current DataFrame to an Excel file.
+    def save(self) -> None:
+        """ Saves the current DataFrame to an Excel file.
+
+        Args:
+        - None
+
+        Returns:
+        - None
         
         Behavior:
         - Writes the contents of the DataFrame `self.df` to an Excel file specified by `self.path`.
         - The file is saved without including the index.
         """
+
         self.df.to_excel(self.path, index=False)
 
     def reset(self) -> pd.DataFrame:
-        """
-        Resets the DataFrame to a default structure and saves it to an Excel file.
-        
+        """ Resets the DataFrame to a default structure and saves it to an Excel file.
+
+        Args:
+        - None
+
         Returns:
         - pd.DataFrame: A new DataFrame with predefined columns and no data.
         
@@ -80,17 +110,16 @@ class QueueJob:
         - Saves the newly created empty DataFrame to an Excel file named "queue_job.xlsx" without including the index.
         - Returns the new empty DataFrame.
         """
+
         columns = ["ip", "name", "username", "job_name", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "taskset", "gpu_requested", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
         self.df = pd.DataFrame(columns=columns)
         self.df.to_excel("queue_job.xlsx", index=False)
-        return self.df
-    
+        return self.df  
 
-    def submit(self, username:str, job_name:str, machine_origin:str, script_name:str, path_origin:str, n_cpu:int, email:str, gpus:list=['all']):
-        """
-        Submits a new job by adding its details to the DataFrame and saving the updated DataFrame to an Excel file.
+    def submit(self, username: str, job_name: str, machine_origin: str, script_name: str, path_origin: str, n_cpu: int, email: str, gpus: list = ['all']) -> None:
+        """ Submits a new job by adding its details to the DataFrame and saving the updated DataFrame to an Excel file.
 
-        Parameters:
+        Args:
         - username (str): The username of the individual submitting the job.
         - job_name (str): The name of the job being submitted.
         - machine_origin (str): The origin machine from where the job is submitted.
@@ -100,12 +129,16 @@ class QueueJob:
         - email (str): The email address for job notifications.
         - gpus (list): A list of GPUs requested for the job, defaults to `['all']`.
 
+        Returns:
+        - None
+
         Behavior:
         - Creates a dictionary with the job details, including the current timestamp as the submission time.
         - Converts the list of GPUs into a comma-separated string.
         - Adds the new job to the DataFrame.
         - Saves the updated DataFrame to an Excel file using the `save` method.
         """
+
         new_job = {
             "username": username,
             "machine_origin": machine_origin,
@@ -120,21 +153,40 @@ class QueueJob:
             "notification_end": "N",
         }
 
-        self.df = pd.concat([self.df, pd.DataFrame([new_job])], ignore_index=True)
+        self.df = pd.concat([self.df, pd.DataFrame([new_job])], ignore_index = True)
         self.save()
         print(self.df)
-
     
-
-    def update_gpu(self):
-        """
-        Updates the GPU information for each machine listed in the 'machines' DataFrame.
+    def update_gpu(self) -> None:
+        """ Updates the GPU information for each machine listed in the 'machines' DataFrame.
 
         This method connects to each machine, retrieves the GPU usage statistics, and updates
         the 'machines' DataFrame with the latest GPU information. It then saves the updated 
         DataFrame to ensure the information is persistent.
+
+        Args:
+        - None
+
+        Returns:
+        - None
         """
-        def run(ip, name, user, pw):
+
+        def run(ip: str, name: str, user: str, pw: str) -> tuple[str, dict]:
+            """ Connects to a machine and retrieves GPU usage statistics.
+
+            This function connects to a remote machine using SSH and retrieves the GPU usage statistics.
+            It returns the machine name and a dictionary containing the GPU information.
+
+            Args:
+            - ip (str): The IP address of the machine.
+            - name (str): The name of the machine.
+            - user (str): The username for the SSH connection.
+            - pw (str): The password for the SSH connection.
+
+            Returns:
+            - tuple[str, dict]: A tuple containing the machine name and a dictionary of GPU information.
+            """
+
             try:
                 print(f"Conectando a {ip}...")
                 results = {}
@@ -148,6 +200,7 @@ class QueueJob:
             except Exception as e:
                 results.update({"gpu_info": []})
                 print(f"Erro ao obter informações de GPU de {ip}: {e}")
+
             return name, results
         
         ips = self.data.machines['ip'].to_list()
@@ -168,6 +221,7 @@ class QueueJob:
                     results[name] = stats
 
         data_gpu = []
+
         for name, stats in results.items():
             row = {"name": name}
             for gpu in stats["gpu_info"]:
@@ -189,9 +243,8 @@ class QueueJob:
         self.data.machines = pd.merge(self.data.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
         self.data.save_machines()
 
-    def __allowed_gpu(self):
-        """
-        Updates the GPU status for each machine based on the allowed GPUs.
+    def __allowed_gpu(self) -> None:
+        """ Updates the GPU status for each machine based on the allowed GPUs.
 
         This method checks which GPUs are allowed for each machine and updates their status 
         to 'disponivel' (available) if they match the allowed GPU names. If a GPU does not match
@@ -199,7 +252,14 @@ class QueueJob:
 
         The allowed GPU names are specified in the 'name_allowed_gpu' column, while the GPU names
         and their statuses are updated in corresponding columns in the 'machines' DataFrame.
+
+        Args:
+        - None
+
+        Returns:
+        - None
         """
+
         g_names = [e.split(",") for e in self.data.machines['name_allowed_gpu'].to_list()]
         col = self.data.machines.loc[:, self.data.machines.columns.str.contains(r"gpu_.*_name", case=False, regex=True)]
 
@@ -213,14 +273,19 @@ class QueueJob:
                     elif pd.isna(self.data.machines[c].iloc[i]):
                         self.data.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
 
-
-    def __status_in_queue(self):
-        """
-        Updates the status of GPUs in the machines DataFrame to 'executando' (executing) for jobs that are currently running.
+    def __status_in_queue(self) -> None:
+        """ Updates the status of GPUs in the machines DataFrame to 'executando' (executing) for jobs that are currently running.
 
         This method checks the DataFrame for jobs with a status of 'executando' and updates the corresponding GPU status
         in the machines DataFrame. If the 'gpu_index' is NaN for any job, it is set to 0 by default.
+
+        Args:
+        - None
+
+        Returns:
+        - None
         """
+
         v = self.df[self.df['status'] == "executando"]
         for i, maq in v.iterrows():
             if pd.isna(maq['gpu_index']): self.df.loc[i, ['gpu_index']] = 0; maq['gpu_index'] = 0
@@ -231,15 +296,19 @@ class QueueJob:
                     f"GPU_{int(maq['gpu_index'])}_status"
                 ] = "executando"
      
-
-    def __update_cpu_used(self):
-        """
-        Updates the 'cpu_used' column in the machines DataFrame based on the number of CPUs allocated
-        to currently running jobs.
+    def __update_cpu_used(self) -> None:
+        """ Updates the 'cpu_used' column in the machines DataFrame based on the number of CPUs allocated to currently running jobs.
 
         This method resets the 'cpu_used' column to 0 and then iterates over the jobs with the status
         'executando', incrementing the 'cpu_used' count for each corresponding machine.
+
+        Args:
+        - None
+
+        Returns:
+        - None
         """
+
         v = self.df[self.df['status'] == "executando"]
         self.data.machines.loc[:,'cpu_used'] = 0
         for i, maq in v.iterrows():
@@ -249,10 +318,8 @@ class QueueJob:
                     "cpu_used"
                 ] += maq['n_cpu']
 
-
-    def update_status_machines(self):
-        """
-        Updates the status of machines by reading machine data, updating GPU and CPU usage,
+    def update_status_machines(self) -> None:
+        """ Updates the status of machines by reading machine data, updating GPU and CPU usage,
         and modifying the job status for each machine.
 
         This method:
@@ -262,7 +329,14 @@ class QueueJob:
         - Updates CPU usage based on currently executing jobs using the `__update_cpu_used` method.
         - Updates the job status in the queue with the `__status_in_queue` method.
         - Saves the updated machine data to the specified path.
+
+        Args:
+        - None
+
+        Returns:
+        - None
         """
+
         self.data.read_machines(self.data.path_machines)
         self.update_gpu()
         self.__allowed_gpu()
@@ -270,14 +344,14 @@ class QueueJob:
         self.__status_in_queue()
         self.data.save_machines()
 
-
-    def search_available_machine(self, n_cpu:int, gpu:bool = False, gpu_name:list = ["all"], cpu_reserve:bool=True, n_cpu_reserve:int=0):
-        """
+    def search_available_machine(self, n_cpu: int, gpu: bool = False, gpu_name: list = ["all"], cpu_reserve: bool = True, n_cpu_reserve: int = 0) -> pd.DataFrame:
+        """ Searches for available machines based on CPU and GPU requirements.
+        
         Searches for available machines based on CPU and GPU requirements. Filters machines with:
         - Sufficient available CPU considering possible reservations.
         - Optional GPU requirements, including the ability to filter by GPU names.
         
-        Parameters:
+        Args:
         - n_cpu (int): Number of CPUs required for the task.
         - gpu (bool): Whether GPU filtering is enabled (default is False).
         - gpu_name (list): List of GPU names to filter. If "all", all GPUs are considered (default is ["all"]).
@@ -287,6 +361,7 @@ class QueueJob:
         Returns:
         - filtered_machines (pd.DataFrame): DataFrame of available machines based on the given criteria.
         """
+
         self.data.read_machines(self.data.path_machines)
     
         if cpu_reserve:
@@ -303,18 +378,22 @@ class QueueJob:
                 )
             ]
 
-        else: available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
+        else:
+            available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
 
         if gpu:
-            if cpu_reserve and n_cpu_reserve >= n_cpu: available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
+            if cpu_reserve and n_cpu_reserve >= n_cpu: 
+                available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
 
             gpu_status_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
             gpu_name_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
             
             gpu_status_available = self.data.machines[gpu_status_cols].eq("disponivel").any(axis=1)
 
-            if gpu_name[0] != "all": gpu_name_match = self.data.machines[gpu_name_cols].isin(gpu_name).any(axis=1) 
-            else: gpu_name_match = self.data.machines[gpu_name_cols].any(axis=1) 
+            if gpu_name[0] != "all":
+                gpu_name_match = self.data.machines[gpu_name_cols].isin(gpu_name).any(axis=1) 
+            else:
+                gpu_name_match = self.data.machines[gpu_name_cols].any(axis=1) 
             
             if gpu_name[0] == "all" or gpu_name != ["Null"]:
                 filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
@@ -332,11 +411,8 @@ class QueueJob:
         else:
             return available_cpu
 
-
-
-    def update_status_jobs(self):
-        """
-        Updates the status and PID of jobs in the DataFrame.
+    def update_status_jobs(self) -> None:
+        """ Updates the status and PID of jobs in the DataFrame.
 
         For each job in the `self.df` DataFrame:
         - If the status is 'executing', the `get_status_job` method is called to fetch the updated status and PID.
@@ -346,23 +422,22 @@ class QueueJob:
 
         This function modifies the `self.df` DataFrame directly and does not return any value.
 
-        Parameters:
-        ----------
-        None.
+        Args:
+        - None.
 
         Returns:
-        --------
-        None.
+        - None.
         """
+
         for i, job in self.df.iterrows():
-            if job['status'] == 'executando': self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
-            if pd.isna(job['status']): self.df.loc[i, ['status']] = 'esperando'
+            if job['status'] == 'executando': 
+                self.df.loc[i, ['status', 'pid']] = self.get_status_job(job['name'], job['path_exc'])
+            if pd.isna(job['status']): 
+                self.df.loc[i, ['status']] = 'esperando'
         self.save()
 
-
-    def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin:str, path_exc:str, inverse:bool = False):
-        """
-        Copies a directory between two remote machines using SCP, with an optional inverse operation.
+    def copy_dir(self, ip_origin, username_origin, password_origin, ip_exc, username_exc, password_exc, path_origin: str, path_exc: str, inverse: bool = False) -> None:
+        """ Copies a directory between two remote machines using SCP, with an optional inverse operation.
 
         This method connects to a source machine (origin) via SSH, and then uses `sshpass` and `scp` 
         to copy the directory from the origin machine to the destination machine (execution machine). 
@@ -370,49 +445,31 @@ class QueueJob:
         - If `inverse` is False (default), the directory is copied from the origin to the execution machine.
         - If `inverse` is True, the directory is copied from the execution machine to the origin.
 
-        Parameters:
-        -----------
-        ip_origin : str
-            The IP address of the origin machine.
-        
-        username_origin : str
-            The SSH username for the origin machine.
-        
-        password_origin : str
-            The SSH password for the origin machine.
-        
-        ip_exc : str
-            The IP address of the execution machine (destination).
-        
-        username_exc : str
-            The SSH username for the execution machine.
-        
-        password_exc : str
-            The SSH password for the execution machine.
-        
-        path_origin : str
-            The path of the directory on the origin machine to be copied.
-        
-        path_exc : str
-            The path on the execution machine to copy the directory to.
-        
-        inverse : bool, optional
-            If True, the directory is copied from the execution machine to the origin machine. Default is False.
+        Args:
+        - ip_origin (str): The IP address of the origin machine.
+        - username_origin (str): The SSH username for the origin machine.
+        - password_origin (str): The SSH password for the origin machine.
+        - ip_exc (str): The IP address of the execution machine (destination).
+        - username_exc (str): The SSH username for the execution machine.
+        - password_exc (str): The SSH password for the execution machine.
+        - path_origin (str): The path of the directory on the origin machine to be copied.
+        - path_exc (str): The path on the execution machine to copy the directory to.
+        - inverse (bool, optional): If True, the directory is copied from the execution machine to the origin machine. Default is False.
 
         Returns:
-        --------
-        None.
+        - None.
 
         Raises:
-        ------
-        Exception
-            If there is an error connecting to the origin machine or executing the copy command, an exception is raised.
+        - Exception: If there is an error connecting to the origin machine or executing the copy command, an exception is raised.
         """
+
         try:
             print(f"Conectando a {ip_origin}...")
             c = Connection(ip_origin, username_origin, password_origin)
-            if inverse: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass && echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {username_exc}@{ip_exc}:{path_exc}/ {path_origin}/ && echo '{password_origin}' | sudo -S chmod -R 777 {path_origin}/{os.path.basename(os.path.normpath(path_exc))}"""
-            else: cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass && echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
+            if inverse:
+                cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass && echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {username_exc}@{ip_exc}:{path_exc}/ {path_origin}/ && echo '{password_origin}' | sudo -S chmod -R 777 {path_origin}/{os.path.basename(os.path.normpath(path_exc))}"""
+            else: 
+                cmd = f""" dpkg -l | grep -qw sshpass || echo '{password_origin}' | sudo -S apt install -y sshpass && echo '{password_origin}' | sudo -S  sshpass -p '{password_exc}' scp -o StrictHostKeyChecking=no -r {path_origin}/ {username_exc}@{ip_exc}:{path_exc} """
                 
             c.execute_ssh_command(cmd)
             #if inverse: c.execute_ssh_command(f"echo '{password_origin}' | sudo -S chmod 777 {path_origin}/{os.path.basename(os.path.normpath(path_exc))}")
@@ -420,40 +477,22 @@ class QueueJob:
         except Exception as e:
             print(f"Erro ao conectar a {ip_origin}: {e}")
 
-        
-        
-    def __make_script_exc(self, taskset:list, script:str, gpu_id:int=-1):
-        """
-        Generates a Python script that runs a shell script with specific CPU core affinity and optional GPU assignment.
+    def __make_script_exc(self, taskset: list, script: str, gpu_id: int = -1) -> str:
+        """ Generates a Python script to run a shell script with CPU affinity and optional GPU assignment.
 
         This method creates a Python script that sets CPU core affinity using the `taskset` command, and optionally sets the GPU 
         using the `CUDA_VISIBLE_DEVICES` environment variable. The script is then executed by calling the `sh` shell command. 
         The script also writes to a file named `labmonitor.status` to log the stages of the script execution process.
 
-        Parameters:
-        -----------
-        taskset : list
-            A list of CPU cores to which the process should be bound (using `taskset` command).
-        
-        script : str
-            The path to the shell script that should be executed.
-
-        gpu_id : int, optional
-            The ID of the GPU to assign the process. Default is -1, indicating no GPU assignment.
+        Args:
+        - taskset (list): A list of CPU cores to which the process should be bound (using `taskset` command).
+        - script (str): The path to the shell script that should be executed.
+        - gpu_id (int, optional): The ID of the GPU to assign the process. Default is -1, indicating no GPU assignment.
 
         Returns:
-        --------
-        str
-            A string containing the Python script that configures and executes the shell script.
-
-        Example:
-        --------
-        taskset = [0, 1, 2, 3]
-        script = "my_script.sh"
-        gpu_id = 0
-        generated_script = self.__make_script_exc(taskset, script, gpu_id)
-        print(generated_script)
+        - str: A string containing the Python script that configures and executes the shell script.
         """
+
         return f"""
 import os
 import subprocess
@@ -461,45 +500,40 @@ with open("labmonitor.status", "w") as log: log.write("iniciado  - "+ str(os.get
 if {gpu_id} == -1:
     pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES= taskset -c {','.join(map(str, taskset))} sh {script} > {script.split(".")[0]}.log", shell=True)
 else:
-    with open("{script}", "r") as file: original_content = file.readlines()
-    with open("{script}", "w") as file: file.write("CUDA_VISIBLE_DEVICES={gpu_id};"); file.writelines(original_content)
+    with open("{script}", "r") as file:
+        original_content = file.readlines()
+    with open("{script}", "w") as file:
+        file.write("CUDA_VISIBLE_DEVICES={gpu_id};")
+        file.writelines(original_content)
     pcs = subprocess.Popen(f"CUDA_VISIBLE_DEVICES={gpu_id} taskset -c {','.join(map(str, taskset))} sh {script} > {script.split(".")[0]}.log", shell=True)
-with open("labmonitor.status", "w") as log: log.write("executando - "+ str(os.getpid()))
+with open("labmonitor.status", "w") as log: 
+    log.write("executando - "+ str(os.getpid()))
 pcs.wait()
-with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ str(os.getpid()))"""
-    
+with open("labmonitor.status", "w") as log: 
+    log.write("finalizado_copiar - "+ str(os.getpid()))"""
 
-    def prepare_job(self, machine_name:str, taskset:list, script:str, path_exc:str, gpu_id:int=-1):
-        """
-        Prepares a job for execution on a remote machine by creating a script (`run_labmonitor.py`) and uploading it.
+    def prepare_job(self, machine_name: str, taskset: list, script: str, path_exc: str, gpu_id: int = -1) -> None:
+        """ Prepares a job for execution on a remote machine by creating a script (`run_labmonitor.py`) and uploading it.
 
         This method connects to a remote machine identified by `machine_name`, generates a Python script to run a shell 
         script with specific CPU core affinity and optional GPU assignment, and uploads the script to the remote machine. 
         The job preparation involves using the `taskset` command to bind the process to specific CPU cores and setting the 
         GPU if specified. The script is saved as `run_labmonitor.py` in the directory specified by `path_exc` on the remote machine.
 
-        Parameters:
-        -----------
-        machine_name : str
-            The name of the machine where the job will be prepared. This name must exist in the `self.data.machines` DataFrame.
-        
-        taskset : list
-            A list of CPU cores to which the process should be bound (using `taskset` command).
-        
-        script : str
-            The path to the shell script that should be executed.
-        
-        path_exc : str
-            The path on the remote machine where the Python script (`run_labmonitor.py`) will be stored.
+        Args:
+        - machine_name (str): The name of the machine where the job will be prepared. This name must exist in the `self.data.machines` DataFrame.
+        - taskset (list): A list of CPU cores to which the process should be bound (using `taskset` command).
+        - script (str): The path to the shell script that should be executed.
+        - path_exc (str): The path on the remote machine where the Python script (`run_labmonitor.py`) will be stored.
+        - gpu_id (int, optional): The ID of the GPU to assign the process. Default is -1, indicating no GPU assignment.
 
-        gpu_id : int, optional
-            The ID of the GPU to assign the process. Default is -1, indicating no GPU assignment.
+        Returns:
+        - None
 
         Raises:
-        -------
-        Exception
-            If there is an error while connecting to the machine or preparing the job, an exception is raised.
+        - Exception: If there is an error while connecting to the machine or preparing the job, an exception is raised.
         """
+
         row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
         if pd.isna(gpu_id): gpu_id = -1
         try:
@@ -509,117 +543,99 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         except Exception as e:
             print(f"Erro na conexão ao preparar trabalho (srcipt run_labmonitor.py): {e}")
 
-
-    def get_status_job(self, machine_name:str, path_exc:str):
-        """
-        Checks the status of a job running on a remote machine.
+    def get_status_job(self, machine_name: str, path_exc: str) -> tuple[str, int]:
+        """ Checks the status of a job running on a remote machine.
 
         This method connects to a remote machine identified by `machine_name`, retrieves the job status from a file (`labmonitor.status`),
         and verifies whether the job is still running based on the PID. If the process is no longer running but the status is still marked 
         as "executando", the status is updated to "nao_finalizado_corretamente". The function returns the job status and the associated 
         process ID (PID).
 
-        Parameters:
-        -----------
-        machine_name : str
-            The name of the machine where the job is running. This name must exist in the `self.data.machines` DataFrame.
-        
-        path_exc : str
-            The path on the remote machine where the `labmonitor.status` file is located.
+        Args:
+        - machine_name (str): The name of the machine where the job is running. This name must exist in the `self.data.machines` DataFrame.
+        - path_exc (str): The path on the remote machine where the `labmonitor.status` file is located.
 
         Returns:
-        --------
-        tuple:
-            A tuple containing:
-            - status (str): The current status of the job. It can be "executando", "nao_finalizado_corretamente", or other statuses.
-            - pid (int): The process ID (PID) of the job.
+        - tuple: A tuple containing:
+        - status (str): The current status of the job. It can be "executando", "nao_finalizado_corretamente", or other statuses.
+        - pid (int): The process ID (PID) of the job.
 
         Raises:
-        -------
-        Exception:
-            If there is an error while connecting to the machine or retrieving the job status, an exception is raised.
+        - Exception: If there is an error while connecting to the machine or retrieving the job status, an exception is raised.
         """
+
         row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
+
         try:
             print(f"Verificando status do job em {row['ip']}")
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             status, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split('-')
-            if (not pid.strip() in con.execute_ssh_command(f"ps -p {pid.strip()}")) and (status.strip() == 'executando'): status = "nao_finalizado_corretamente"; con.execute_ssh_command(f"echo '{status} - {pid}' > {path_exc}/labmonitor.status")
+
+            if (not pid.strip() in con.execute_ssh_command(f"ps -p {pid.strip()}")) and (status.strip() == 'executando'): 
+                status = "nao_finalizado_corretamente"; con.execute_ssh_command(f"echo '{status} - {pid}' > {path_exc}/labmonitor.status")
+
             con.ssh.close()
             return status.strip(), int(pid)
         except Exception as e:
             print(f"Erro ao verificar status do job: {e}")
             return "", -1
 
-
-    def star_job(self, machine_name:str, path_exc:str)  -> int:
-        """
-        Starts a job on a remote machine by executing a Python script (`run_labmonitor.py`) in the specified path.
+    def start_job(self, machine_name: str, path_exc: str) -> int:
+        """ Starts a job on a remote machine by executing a Python script (`run_labmonitor.py`) in the specified path.
 
         This method connects to the remote machine identified by `machine_name`, navigates to the directory `path_exc`, and executes 
         the Python script `run_labmonitor.py` in the background using `nohup`. The function waits briefly, retrieves the process ID (PID) 
         of the running job from the `labmonitor.status` file, and returns the PID. If an error occurs, the method returns `-1`.
 
-        Parameters:
-        -----------
-        machine_name : str
-            The name of the machine where the job should be started. This name must exist in the `self.data.machines` DataFrame.
-
-        path_exc : str
-            The path on the remote machine where the `run_labmonitor.py` script is located and should be executed from.
+        Args:
+        - machine_name (str): The name of the machine where the job should be started. This name must exist in the `self.data.machines` DataFrame.
+        - path_exc (str): The path on the remote machine where the `run_labmonitor.py` script is located and should be executed from.
 
         Returns:
-        --------
-        int:
-            The PID of the job being started on the remote machine. If an error occurs, returns `-1`.
+        - int: The PID of the job being started on the remote machine. If an error occurs, returns `-1`.
 
         Raises:
-        -------
-        Exception:
-            If there is an error while connecting to the machine, executing the script, or retrieving the job PID, an exception is raised.
+        - Exception: If there is an error while connecting to the machine, executing the script, or retrieving the job PID, an exception is raised.
         """
+
         row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
+
         try:
             print(f"Iniciando trabalho em {row['ip']}")
+
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             ch = con.ssh.get_transport().open_session()
             ch.exec_command(f"cd {path_exc} && nohup python3 run_labmonitor.py >  run_labmonitor.log &")
+
             time.sleep(0.1)
             _, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split("-")
+
             ch.close()
             con.ssh.close()
+
             return int(pid)
         except Exception as e:
             print(f"Erro a iniciar trabalho {row['ip']} {path_exc}: {e}")
             return -1
     
-
-    def __make_dir_exc(self, machine_exc:str, dir_exc:str):
-        """
-        Creates a directory on a remote machine.
+    def __make_dir_exc(self, machine_exc: str, dir_exc: str) -> bool:
+        """ Creates a directory on a remote machine.
 
         This method connects to a remote machine specified by `machine_exc` and attempts to create a directory at the path 
         specified by `dir_exc` using the `mkdir` command. If the operation is successful, it returns `True`; otherwise, 
         it returns `False` and prints an error message.
 
-        Parameters:
-        -----------
-        machine_exc : str
-            The name of the machine where the directory should be created. This name must exist in the `self.data.machines` DataFrame.
-
-        dir_exc : str
-            The path to the directory that should be created on the remote machine.
+        Args:
+        - machine_exc (str): The name of the machine where the directory should be created. This name must exist in the `self.data.machines` DataFrame.
+        - dir_exc (str): The path to the directory that should be created on the remote machine.
 
         Returns:
-        --------
-        bool:
-            `True` if the directory is created successfully, otherwise `False`.
+        - bool: `True` if the directory is created successfully, otherwise `False`.
 
         Raises:
-        -------
-        Exception:
-            If there is an error while connecting to the machine or creating the directory, an exception is raised.
+        - Exception: If there is an error while connecting to the machine or creating the directory, an exception is raised.
         """
+
         row = self.data.machines[self.data.machines['name'] == machine_exc].iloc[0]
         try:
             print(f"Conectando a {row['ip']}...")
@@ -630,31 +646,22 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         except Exception as e:
             print(f"Erro ao conectar a para criar dir_exec {row['ip']}: {e}")
             return False
-    
 
-    def __get_taskset(self, machine_name:str, n_cpu:int):
-        """
-        Retrieves a list of available CPU cores (taskset) on a specified machine.
+    def __get_taskset(self, machine_name: str, n_cpu: int) -> list:
+        """ Retrieves a list of available CPU cores (taskset) on a specified machine.
 
         This function checks which CPU cores are currently occupied by running tasks on the given machine, 
         and then returns a list of unoccupied cores (taskset) that can be used for new tasks. The number of 
         cores returned is determined by the value of `n_cpu`.
 
-        Parameters:
-        -----------
-        machine_name : str
-            The name of the machine for which the available CPU cores are to be retrieved. This name must exist 
-            in the `self.df` DataFrame.
-
-        n_cpu : int
-            The number of CPU cores needed. The function will return at most `n_cpu` available cores.
+        Args:
+        - machine_name (str): The name of the machine for which the available CPU cores are to be retrieved. This name must exist in the `self.df` DataFrame.
+        - n_cpu (int): The number of CPU cores needed. The function will return at most `n_cpu` available cores.
 
         Returns:
-        --------
-        list:
-            A list of available CPU core indices (taskset) that can be used for new tasks. The length of the list 
-            will be up to `n_cpu`.
+        - list: A list of available CPU core indices (taskset) that can be used for new tasks. The length of the list will be up to `n_cpu`.
         """
+
         result_task = []
         task = self.df.loc[(self.df['name'] == machine_name) & (self.df['status'] == 'executando'), 'taskset']
         all_task = [int(num) for t in task if isinstance(t, str) for num in t.split(',')]
@@ -671,35 +678,33 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
 
     # Limitações usuários  
-    def __limit_per_user(self, index:int, limit:int=2) -> bool:
-        """
-        Checks whether a user has reached the limit of concurrent running jobs.
+    def __limit_per_user(self, index: int, limit: int = 2) -> bool:
+        """ Checks whether a user has reached the limit of concurrent running jobs.
 
         This function checks if the user associated with the job at the specified index has reached the 
         specified limit of running jobs. If the user is currently executing jobs that meet or exceed the 
         limit, the function will return `False`. Otherwise, it returns `True`.
 
-        Parameters:
-        -----------
-        index : int
-            The index of the job in the DataFrame to check the user for. The function retrieves the user's 
-            information based on the job at this index.
-
-        limit : int, optional, default=2
-            The maximum number of concurrent jobs a user is allowed to have running. The default is 2.
+        Args:
+        - index (int): The index of the job in the DataFrame to check the user for. The function retrieves the user's 
+        information based on the job at this index.
+        - limit (int, optional): The maximum number of concurrent jobs a user is allowed to have running. Default is 2.
 
         Returns:
-        --------
-        bool:
-            `True` if the user has not reached the limit of concurrent jobs, `False` if the user has 
-            reached or exceeded the limit.
+        - bool: `True` if the user has not reached the limit of concurrent jobs, `False` if the user has 
+        reached or exceeded the limit.
         """
+
         row = self.df.loc[index]
         user_filter = self.data.users.loc[self.data.users['username'] == row['username'], ['simultaneous_jobs_limit', 'gpu_limit', 'cpu_limit']]
         user_filter_default = self.data.users.loc[self.data.users['username'] == 'default', ['simultaneous_jobs_limit', 'gpu_limit', 'cpu_limit']]
 
-        if not user_filter.empty: limit = user_filter.iloc[0]['simultaneous_jobs_limit']; gpu_limit = user_filter.iloc[0]['gpu_limit']
-        elif not user_filter_default.empty: limit = user_filter_default.iloc[0]['simultaneous_jobs_limit']; gpu_limit = user_filter_default.iloc[0]['gpu_limit']
+        if not user_filter.empty:
+            limit = user_filter.iloc[0]['simultaneous_jobs_limit']
+            gpu_limit = user_filter.iloc[0]['gpu_limit']
+        elif not user_filter_default.empty:
+            limit = user_filter_default.iloc[0]['simultaneous_jobs_limit']
+            gpu_limit = user_filter_default.iloc[0]['gpu_limit']
 
         jobs_user_exc = self.df.loc[(self.df['username'] == row['username']) & (self.df['status'] == 'executando'), 'username'].shape[0]
         jobs_user_gpus = self.df.loc[(self.df['username'] == row['username']) & (self.df['status'] == 'executando') & (self.df['gpu_name'].notna() & (self.df['gpu_name'] != '')), 'gpu_name'].shape[0]
@@ -708,57 +713,48 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             if jobs_user_gpus > gpu_limit and not pd.isna(row['gpu_requested']): 
                 return False
             return True
-        else: return False
+        
+        else:
+            return False
 
-    def limit_job(self, index, limit_per_user:bool=True, job_limit_per_user:int=3) -> bool:
-        """
-        Checks whether a job can be executed based on user-defined limits.
+    def limit_job(self, index, limit_per_user: bool = True, job_limit_per_user: int = 3) -> bool:
+        """ Checks whether a job can be executed based on user-defined limits.
 
         This function evaluates whether a job at the specified index can be executed based on the user-defined 
         limits, such as the number of concurrent jobs a user is allowed to run. If the `limit_per_user` 
         parameter is set to `True`, it checks if the user has exceeded the allowed number of concurrent jobs 
         (as specified by `job_limit_per_user`).
 
-        Parameters:
-        -----------
-        index : int
-            The index of the job in the DataFrame to check the user's job limits.
-        
-        limit_per_user : bool, optional, default=True
-            Whether to apply the limit on the number of concurrent jobs per user. If `True`, the limit will be applied.
-
-        job_limit_per_user : int, optional, default=3
-            The maximum number of concurrent jobs allowed for each user. The default value is 3.
+        Args:
+        - index (int): The index of the job in the DataFrame to check the user's job limits.
+        - limit_per_user (bool, optional): Whether to apply the limit on the number of concurrent jobs per user. Default is True.
+        - job_limit_per_user (int, optional): The maximum number of concurrent jobs allowed for each user. Default is 3.
 
         Returns:
-        --------
-        bool:
-            `True` if all conditions are met (i.e., the user has not exceeded the job limit). 
-            `False` if any condition fails (e.g., the user has exceeded the job limit).
+        - bool: `True` if all conditions are met (i.e., the user has not exceeded the job limit). 
+        `False` if any condition fails (e.g., the user has exceeded the job limit).
         """
+
         res = []
-        if limit_per_user: res.append(self.__limit_per_user(index, limit=job_limit_per_user))
+        if limit_per_user:
+            res.append(self.__limit_per_user(index, limit=job_limit_per_user))
 
         return all(res)
     
 
     # Ações status
-    def __esperando(self, index:int):
-        """
-        Prepares and starts a job on an available machine with the required resources.
+    def __esperando(self, index: int) -> None:
+        """ Prepares and starts a job on an available machine with the required resources.
 
         This function checks the resource availability (CPU, GPU) on the machines, selects one with enough resources, 
         updates the job status, allocates the necessary CPUs and GPUs, creates a directory for job execution, 
         copies required files, and starts the job execution on the selected machine. It also handles job notifications 
         and updates the job-related DataFrame accordingly.
 
-        Parameters:
-        -----------
-        index : int
-            The index of the job in the DataFrame to prepare and start.
+        Args:
+        - index (int): The index of the job in the DataFrame to prepare and start.
 
         Process:
-        --------
         - The function first checks if the required CPUs and GPUs are available on the machines.
         - It then selects the first available machine, updates the job's status and assigns resources.
         - A new directory is created on the selected machine for job execution, and necessary files are copied.
@@ -767,19 +763,21 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         - Updates to the machine and job data are saved.
 
         Returns:
-        --------
-        None
+        - None
         """
-        n_cpu=self.df.loc[index, 'n_cpu']
+
+        n_cpu = self.df.loc[index, 'n_cpu']
         gpu = not pd.isna(self.df.loc[index, 'gpu_requested'])
-        if gpu: gpu_name = self.df.loc[index, 'gpu_requested'].split(",")
-        else: gpu_name = ["all"]
+        if gpu:
+            gpu_name = self.df.loc[index, 'gpu_requested'].split(",")
+        else:
+            gpu_name = ["all"]
 
         machines = self.search_available_machine(n_cpu=n_cpu,
                                       gpu=gpu,
                                       gpu_name=gpu_name,
                                       n_cpu_reserve=6
-                                      )
+                                    )
         
         if machines.shape[0] > 0:
             machine = machines.iloc[0]
@@ -836,7 +834,7 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
                             gpu_id=self.df.loc[index, 'gpu_index']
                             )
 
-            pid = self.star_job(machine_name=machine['name'], path_exc=self.df.loc[index, 'path_exc'])
+            pid = self.start_job(machine_name=machine['name'], path_exc=self.df.loc[index, 'path_exc'])
             self.df.loc[index, ['pid']] = pid
             self.df.loc[index, ['inicio']] = datetime.now()
 
@@ -852,19 +850,26 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             self.data.save_machines() 
             self.save()
             
+    def __finalizado_copiar(self, index: int) -> None:
+        """ Method responsible for finalizing the job execution process after copying files between machines.
 
-    def __finalizado_copiar(self, index:int):
-        """
         Method responsible for finalizing the file copy between machines after a job execution.
         Updates the job status and manages the copy process.
 
-        Parameters:
+        Args:
         - index (int): The index of the row in the DataFrame that contains job and machine information.
         """
-        def subp_copy():
+
+        def subp_copy() -> None:
+            """  Internal function that performs copy operations and status updates in a separate thread.
+
+            Args:
+            - None.
+
+            Returns:
+            - None.
             """
-            Internal function that performs copy operations and status updates in a separate thread.
-            """
+
             data_machines_origin = Data(); data_machines_origin.read_machines()
             ip_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0]
             username_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'username'].iloc[0]
@@ -889,17 +894,17 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
 
             if copiar:
                 try:
-                    self.copy_dir(ip_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
-                        username_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
-                        password_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
-                        path_origin=self.df.loc[index, 'path_origin'],
-                        
-                        ip_exc=ip_exc,
-                        username_exc=username_exc,
-                        password_exc=password_exc,
-                        path_exc=path_exc,
-                        inverse=True
-                        )
+                    self.copy_dir(
+                        ip_origin = data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
+                        username_origin = data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
+                        password_origin = data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
+                        path_origin = self.df.loc[index, 'path_origin'],
+                        ip_exc = ip_exc,
+                        username_exc = username_exc,
+                        password_exc = password_exc,
+                        path_exc = path_exc,
+                        inverse = True
+                    )
                     copiado = True
                     
                 except Exception as e:
@@ -923,27 +928,27 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
                 con.execute_ssh_command(cmd)
                 con.ssh.close()
             except Exception as e:
-                print(f"Erro ao atualizar status do job p/ finalizado: {e}")
-                
+                print(f"Erro ao atualizar status do job p/ finalizado: {e}")          
 
         proc = threading.Thread(target=subp_copy)
         proc.start()
         
-        
-    def view_job_log(self, job_row:pd.Series, sufix:str=".log"):
-        """
-        Method to retrieve and display the latest logs from a remote machine associated with a job.
-        The method connects to the target machine via SSH, fetches the most recent log lines, 
+    def view_job_log(self, job_row:pd.Series, sufix: str = ".log") -> dict:
+        """ Retrieves and displays the latest logs from a remote machine associated with a job.
+
+        This method connects to the target machine via SSH, fetches the most recent log lines, 
         and parses the logs into a dictionary where the log file name is the key and the content is the value.
 
-        Parameters:
+        Args:
         - job_row (pd.Series): A row from the DataFrame containing information about the job.
-        - sufix (str): The suffix (file extension) of the log files to be retrieved, default is ".log".
+        - sufix (str): The suffix (file extension) of the log files to be retrieved. Default is ".log".
 
         Returns:
-        - r (dict): A dictionary where the keys are log file names and the values are the corresponding log contents.
+        - dict: A dictionary where the keys are log file names and the values are the corresponding log contents.
         """
+
         machine = self.data.machines[self.data.machines['name'] == job_row['name']].iloc[0]
+
         try:
             print(f"Conectando a {machine['ip']}...")
             con = Connection(ip=machine['ip'], username=machine['username'], password=machine['password'])
@@ -960,51 +965,90 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             print(f"Erro ao conectar para criar ler logs {machine['ip']}: {e}")
             return {"":""}
 
+    def __executando(self, index: int) -> None:
+        """ Method to monitor the execution status of a job and update the job status accordingly.
+        
+        This method checks the status of a job running on a remote machine and updates the job status based on the current state.
+        
+        Args:
+        - index (int): The index of the job in the DataFrame to monitor and update.
+        
+        Returns:
+        - None
+        """
 
-    def __executando(self, index:int):
         pass
 
-    def __finalizado(self, index:int):
-        """
-        Method to send a notification email to the user when their job is completed successfully.
+    def __finalizado(self, index: int) -> None:
+        """ Sends a notification email to the user when their job is completed successfully.
+
         This method triggers an email containing the completion message and updates the job's status.
-        
-        Parameters:
+
+        Args:
         - index (int): The index of the job in the DataFrame, indicating which job has finished.
+
+        Returns:
+        - None
         """
-        def send():
+        
+        def send() -> None:
+            """ Handles sending the completion notification email.
+
+            This inner function sends an email to inform the user that their job has been completed successfully. 
+            The email contains a message indicating that the job has finished correctly and that the files have been 
+            copied back to the origin directory. The function then updates the job status and saves the changes to the DataFrame.
+
+            Args:
+            - None
+
+            Returns:
+            - None
+            """
+
             if self.df.loc[index, 'notification_end'] == "N":
                 obs = """
                 Seu trabalho foi finalizado corretamente. 
                 Os arquivos foram copiados para seu diretório de origem."""
 
-                if self.__send_mail(subject=f"Trabalho finalizado - {self.df.loc[index, 'job_name']} | LMDM",
-                                message=self.__make_email_html(df_row=self.df.loc[index], observation=obs),
-                                subtype="html",
-                                to=self.df.loc[index, 'e-mail'],
-                                ): self.df.loc[index, 'notification_end'] = "Y"
+                if self.__send_mail(
+                            subject = f"Trabalho finalizado - {self.df.loc[index, 'job_name']} | LMDM",
+                            message = self.__make_email_html(df_row = self.df.loc[index], observation = obs),
+                            subtype = "html",
+                            to = self.df.loc[index, 'e-mail'],
+                        ):
+                    self.df.loc[index, 'notification_end'] = "Y"
                 self.save()
 
-        proc = threading.Thread(target=send)
+        proc = threading.Thread(target = send)
         proc.start()
         self.df.loc[index, ['fim']] = datetime.now()
 
+    def __nao_finalizado_corretamente(self, index: int) -> None:
+        """ Notifies the user when their job was not completed correctly.
 
-    def __nao_finalizado_corretamente(self, index):
-        """
-        Method to notify the user when their job was not completed correctly.
-        It sends an email to inform the user about the possible failure reasons, updates the job's 
+        This method sends an email to inform the user about the possible failure reasons, updates the job's 
         status to "nao_finalizado_corretamente", and attempts to copy the necessary files back to the origin.
 
-        Parameters:
+        Args:
         - index (int): The index of the job in the DataFrame, indicating which job experienced an issue.
+
+        Returns:
+        - None
         """
-        def send():
-            """
-            Inner function to handle sending the failure notification email.
-            It sends an email to inform the user about the failure and provides suggestions for re-submission.
+
+        def send() -> None:
+            """ Handles sending the failure notification email.
+
+            This inner function sends an email to inform the user about the failure and provides suggestions for re-submission. 
             The job status is then updated, and the files are copied back to the origin directory.
+
+            Args:
+            - None
+
+            Returns:
+            - None
             """
+
             if self.df.loc[index, 'notification_end'] == "N":
                 obs = """
                 Seu trabalho não foi finalizado corretamente. 
@@ -1012,58 +1056,61 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
                 Os arquivos foram copiados para seu diretório de origem, verifique e faça uma nova submissão à fila. 
                 Caso possível, aproveite os dados produzidos para reiniciar o trabalho."""
 
-                if self.__send_mail(subject=f"Trabalho não finalizado corretamente - {self.df.loc[index, 'job_name']} | LMDM",
-                                message=self.__make_email_html(df_row=self.df.loc[index], observation=obs),
-                                subtype="html",
-                                to=self.df.loc[index, 'e-mail'],
-                                ): self.df.loc[index, 'notification_end'] = "Y"
+                if self.__send_mail(
+                            subject = f"Trabalho não finalizado corretamente - {self.df.loc[index, 'job_name']} | LMDM",
+                            message = self.__make_email_html(df_row = self.df.loc[index], observation = obs),
+                            subtype = "html",
+                            to = self.df.loc[index, 'e-mail'],
+                        ):
+                    self.df.loc[index, 'notification_end'] = "Y"
                 
                 self.__finalizado_copiar(index)
                 self.df.loc[index, 'status'] = "nao_finalizado_corretamente" 
                 self.save()
                 
-        proc = threading.Thread(target=send)
+        proc = threading.Thread(target = send)
         proc.start()
  
-    def __copiando(self, index):
+    def __copiando(self, index) -> None:
         pass
 
-    def __falha_ao_copiar(self, index):
+    def __falha_ao_copiar(self, index) -> None:
         pass
 
-    def __iniciado(self, index):
+    def __iniciado(self, index) -> None:
         pass
 
-    def __nenhum(self, index):
+    def __nenhum(self, index) -> None:
         pass
 
-    def __monitor_now(self):
-        """
-        Method to monitor the current status of all jobs and machines. 
-        It updates the status of the jobs based on their current state and performs the appropriate actions for each job.
-        
-        The actions are mapped to different job statuses, such as 'esperando', 'finalizado_copiar', 'executando', etc.
-        The method also reads job data from the Excel file, updates machine and job statuses, and iterates through all jobs 
-        to apply the relevant action based on their status.
+    def __monitor_now(self) -> None:
+        """ Monitors the current status of all jobs and machines.
 
-        The method ensures that only jobs that meet the job limits are processed.
+        This method updates the status of the jobs based on their current state and performs the appropriate actions for each job. 
+        It maps actions to different job statuses, such as 'esperando', 'finalizado_copiar', 'executando', etc. The method also reads 
+        job data from the Excel file, updates machine and job statuses, and iterates through all jobs to apply the relevant action 
+        based on their status. It ensures that only jobs meeting the job limits are processed.
 
         Actions for each job status:
-        - 'esperando': Calls the __esperando method
-        - 'finalizado_copiar': Calls the __finalizado_copiar method
-        - 'executando': Calls the __executando method
-        - 'finalizado': Calls the __finalizado method
-        - 'nao_finalizado_corretamente': Calls the __nao_finalizado_corretamente method
-        - 'copiando': Calls the __copiando method
-        - 'falha_ao_copiar': Calls the __falha_ao_copiar method
-        - 'iniciado': Calls the __iniciado method
-        - '': Calls the __nenhum method (for empty or undefined statuses)
+        - 'esperando': Calls the __esperando method.
+        - 'finalizado_copiar': Calls the __finalizado_copiar method.
+        - 'executando': Calls the __executando method.
+        - 'finalizado': Calls the __finalizado method.
+        - 'nao_finalizado_corretamente': Calls the __nao_finalizado_corretamente method.
+        - 'copiando': Calls the __copiando method.
+        - 'falha_ao_copiar': Calls the __falha_ao_copiar method.
+        - 'iniciado': Calls the __iniciado method.
+        - '': Calls the __nenhum method (for empty or undefined statuses).
 
         This method is designed to monitor the status of jobs and execute corresponding actions based on the job's state.
 
-        Parameters:
+        Args:
+        - None
+
+        Returns:
         - None
         """
+
         action = {'esperando': self.__esperando, 
                   "finalizado_copiar": self.__finalizado_copiar,
                   "executando": self.__executando, 
@@ -1084,28 +1131,29 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             if not self.limit_job(index=i): continue
             action[row['status']](index=i)
 
+    def monitor(self, feq_time: int = 300, now: bool = False) -> None:
+        """ Monitors jobs and machines periodically or immediately based on the provided parameters.
 
+        This method continuously checks the status of the jobs and machines at regular intervals if the `now` flag is False. 
+        If `now` is set to True, it monitors the jobs and machines immediately without waiting.
 
-    def monitor(self, feq_time:int=300, now:bool=False):
-        """
-        Method to monitor jobs and machines periodically or immediately based on the provided parameters.
-        
-        This method continuously checks the status of the jobs and machines at regular intervals if the 'now' flag is False.
-        If 'now' is set to True, it monitors the jobs and machines immediately without waiting.
-
-        Parameters:
+        Args:
         - feq_time (int): The frequency in seconds (default: 300). Defines how often the monitor should run when `now` is False.
-        - now (bool): A flag to determine whether to monitor immediately (True) or at regular intervals (False).
+        - now (bool): A flag to determine whether to monitor immediately (`True`) or at regular intervals (`False`).
 
-        The method will continuously execute the monitoring process (via `__monitor_now`), either in an infinite loop (when `now=False`) or once (when `now=True`).
+        Returns:
+        - None
 
         Behavior:
         - When `now` is False:
-            - The method prints the start and end time of each monitoring cycle.
-            - After each monitoring cycle, it waits for the specified `feq_time` before repeating the process.
+        - The method prints the start and end time of each monitoring cycle.
+        - After each monitoring cycle, it waits for the specified `feq_time` before repeating the process.
         - When `now` is True:
-            - The method performs one immediate monitoring cycle without waiting.
+        - The method performs one immediate monitoring cycle without waiting.
+
+        This method executes the monitoring process (via `__monitor_now`), either in an infinite loop (when `now=False`) or once (when `now=True`).
         """
+
         while not now:
             print(f"Monitorando inicio: {datetime.now()}")
 
@@ -1117,6 +1165,17 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
             self.__monitor_now()
 
     def __head_mail(self) -> str:
+        """ Generates the HTML header for the email content.
+
+        This method generates the HTML header content for the email message, including the CSS styles for the email layout.
+
+        Args:
+        - None
+
+        Returns:
+        - str: The HTML content for the email header.
+        """
+
         return """<head>
             <style>
                 body { font-family: Arial, sans-serif; }
@@ -1155,11 +1214,36 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         </head>"""
 
     def __footer_mail(self) -> str:
+        """ Generates the HTML footer for the email content.
+
+        This method generates the HTML footer content for the email message, including a disclaimer about automated emails.
+
+        Args:
+        - None
+
+        Returns:
+        - str: The HTML content for the email footer.
+        """
+
         return """<div class="footer">
             <p>Este é um e-mail automático. Por favor, não responda.</p>
         </div>"""
 
-    def __make_email_html(self, df_row: pd.Series, title: str = "Agendamento", observation:str=""):
+    def __make_email_html(self, df_row: pd.Series, title: str = "Agendamento", observation: str = "") -> str:
+        """ Generates an HTML email message for a job based on the information in the DataFrame row.
+
+        This method creates an HTML email message with the job details, such as machine name, user, status,
+        submission date, end date, CPU and GPU information, and any additional observations provided.
+
+        Args:
+        - df_row (pd.Series): A row from the DataFrame containing information about the job.
+        - title (str): The title of the email message. Default is "Agendamento".
+        - observation (str): Additional observations or notes to include in the email message. Default is an empty string.
+
+        Returns:
+        - str: The HTML content for the email message.
+        """
+
         return f"""<html>
         {self.__head_mail()}
         <body>
@@ -1206,14 +1290,13 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         </body>
     </html>"""
 
-    def __send_mail(self, subject:str, message:str, to:str, subtype:str="plain") -> bool:
-        """
-        Sends an email to the specified recipient with the given subject and message content.
-        
+    def __send_mail(self, subject: str, message: str, to: str, subtype: str = "plain") -> bool:
+        """ Sends an email to the specified recipient with the given subject and message content.
+
         This method creates an email message and sends it using SMTP through a Gmail server. It uses the credentials stored in `self.data.email` 
         for authentication and sends the email in the specified format (`plain` or `html`).
 
-        Parameters:
+        Args:
         - subject (str): The subject of the email.
         - message (str): The body content of the email.
         - to (str): The recipient's email address.
@@ -1222,9 +1305,10 @@ with open("labmonitor.status", "w") as log: log.write("finalizado_copiar - "+ st
         Returns:
         - bool: Returns `True` if the email was successfully sent, `False` if there was an error.
 
-        This method uses Gmail's SMTP server (`smtp.gmail.com`) on port 587 for sending the email, and it requires a valid Gmail account password.
-        You should generate an app-specific password for this purpose if 2-step verification is enabled on your Gmail account. 
+        This method uses Gmail's SMTP server (`smtp.gmail.com`) on port 587 for sending the email, and it requires a valid Gmail account password. 
+        You should generate an app-specific password for this purpose if 2-step verification is enabled on your Gmail account.
         """
+
         try:
             msg = MIMEMultipart()
             # setup the parameters of the message

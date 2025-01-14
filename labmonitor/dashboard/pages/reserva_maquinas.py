@@ -1,6 +1,11 @@
+""" Machine reservation page """
+
+# Imports
+############################################################################################################
 import sys
 import pandas as pd
 import streamlit as st
+
 from datetime import datetime, time
 from labmonitor.connection import Connection
 from labmonitor.data import Data
@@ -8,7 +13,19 @@ from labmonitor.monitor import Monitor
 from labmonitor.queue import Queue
 
 
-def agendar():
+# Functions
+############################################################################################################
+
+def agendar() -> None:
+    """ Schedule a new job in the queue
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     global queue
     with st.container(border=True):
         st.subheader("Novo Agendamento")
@@ -70,7 +87,16 @@ def agendar():
                 except Exception as e:
                     st.error(f"Erro ao agendar: {e}")
                     
-def remover_agendamento():
+def remover_agendamento() -> None:
+    """ Remove a job from the queue
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     global queue
     with st.container(border=True):
         st.subheader("Remover Agendamento")
@@ -101,7 +127,16 @@ def remover_agendamento():
             elif email != queue.df.iloc[index_remove]['e-mail']:
                 st.error(f"E-mail não corresponde ao do agendamento.")
 
-def lista_espera():
+def lista_espera() -> None:
+    """ List the machines in the queue
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     global queue
     with st.container(border=True):
         st.subheader("Lista de espera")
@@ -111,6 +146,9 @@ def lista_espera():
             with st.expander(m):
                 st.dataframe(queue.df[queue.df['name'] == m][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day']),  hide_index=True, use_container_width=True)
 
+
+# Main
+############################################################################################################
 
 st.markdown("# Agendamento de Máquinas")
 st.sidebar.markdown("# Agendamento de Máquinas")
@@ -124,7 +162,16 @@ except:
     st.warning("Não foi possivel atualizar o status dos agendamentos.")
     pass
 
-def monitor_now():
+def monitor_now() -> None:
+    """ Monitor the queue now
+
+    Args:
+    - None
+    
+    Returns:
+    - None
+    """
+
     try:
         queue.monitor(now=True)
     except Exception as e:
@@ -134,7 +181,16 @@ def monitor_now():
 st.subheader("Agendamentos")
 st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day']), use_container_width=True, hide_index=True)
 
-def nenhum():
+def nenhum() -> None:
+    """ Do nothing
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+    
     pass
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento", "Lista de Espera"])

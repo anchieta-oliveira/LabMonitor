@@ -1,7 +1,14 @@
+""" History of the machines monitored by the system. """
+
+# Imports
+############################################################################################################
 import os
 import pandas as pd
 import streamlit as st
 import plotly.express as px
+
+# Main
+############################################################################################################
 
 st.markdown("# Histórico")
 st.sidebar.markdown("# Histórico de uso.")

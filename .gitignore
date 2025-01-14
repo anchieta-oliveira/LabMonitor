@@ -3,8 +3,15 @@
 *.py[cod]
 *.nbc
 *.nbi
+<<<<<<< HEAD
 *json
 *log
 *xlsx
 email.json
 machines.xlsx
+=======
+*machines.xlsx
+
+# Documentation
+/docs/build
+>>>>>>> 63c578f3d76290d947755b306028cb68263a58aa

@@ -1,6 +1,12 @@
+""" A module to manage SSH connections to remote machines. """
+
+# Imports
+############################################################################################################
 import paramiko
 
 
+# Class
+############################################################################################################
 class Connection:
     """
     A class to manage SSH connections to remote machines.
@@ -16,21 +22,28 @@ class Connection:
     ssh (paramiko.SSHClient): The SSH client instance used to manage the connection.
 
     Methods:
-    __init__(self, ip: str, username: str, password: str):
-        Initializes the Connection object with the provided connection details and establishes an SSH connection.
+    __init__(self, ip: str, username: str, password: str): Initializes the Connection object with the provided connection details and establishes an SSH connection.
 
-    set_connection(self):
-        Sets the connection details for a machine.
+    set_connection(self): Sets the connection details for a machine.
 
-    get_connection(self):
-        Establishes an SSH connection to a remote machine using the provided connection details.
+    get_connection(self): Establishes an SSH connection to a remote machine using the provided connection details.
     
-    execute_ssh_command(self, command:str):
-        Executes a command over an established SSH connection.
+    execute_ssh_command(self, command:str): Executes a command over an established SSH connection.
 
     """
 
-    def __init__(self, ip:str, username:str, password:str):
+    def __init__(self, ip:str, username:str, password:str) -> None:
+        """ Initializes the Connection object with the provided connection details and establishes an SSH connection.
+
+        Args:
+        - ip (str): The IP address of the remote machine.
+        - username (str): The username for authentication on the remote machine.
+        - password (str): The password associated with the username for authentication.
+
+        Returns:
+        - None
+        """
+
         self.ip = ip
         self.username = username
         self.password = password
@@ -38,37 +51,41 @@ class Connection:
 
 
     def set_connection(self, ip:str, username:str, password:str):
-        """
-        Sets the connection details for a machine.
+        """ Sets the connection details for a machine.
 
         This method stores the IP address, username, and password for the machine
         to facilitate further connections or operations requiring authentication.
 
         Parameters:
-        ip (str): The IP address of the machine.
-        username (str): The username used for authentication on the machine.
-        password (str): The password associated with the provided username.
+        - ip (str): The IP address of the machine.
+        - username (str): The username used for authentication on the machine.
+        - password (str): The password associated with the provided username.
 
         Returns:
-        None
+        - None
         """
+
         self.ip = ip
         self.username = username
         self.password = password
 
     def get_connection(self):
-        """
-        Establishes an SSH connection to a remote machine using the provided connection details.
+        """ Establishes an SSH connection to a remote machine using the provided connection details.
 
         This method uses the `paramiko` library to establish an SSH connection to the machine
         with the stored IP address, username, and password. If the connection is successful, 
         it stores the SSH client instance for further interaction.
 
+        Args:
+        - None
+
         Raises:
-        RuntimeError: If there is an error during the connection attempt (e.g., invalid credentials or network issues).
+        - RuntimeError: If there is an error during the connection attempt (e.g., invalid credentials or network issues).
 
         Returns:
-        None"""
+        - None
+        """
+
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -87,15 +104,16 @@ class Connection:
         SSH connection and retrieves the output. If the command executes successfully, 
         the output is returned as a string, with leading/trailing whitespace removed.
 
-        Parameters:
-        command (str): The command to be executed on the remote machine.
-
-        Raises:
-        RuntimeError: If there is an error executing the command (e.g., network issues, invalid command, etc.).
+        Args:
+        - command (str): The command to be executed on the remote machine.
 
         Returns:
-        str: The output of the command executed on the remote machine, stripped of leading/trailing whitespace.
+        - str: The output of the command executed on the remote machine, stripped of leading/trailing whitespace.
+
+        Raises:
+        - RuntimeError: If there is an error executing the command (e.g., network issues, invalid command, etc.).
         """
+
         try:
             stdin, stdout, stderr = self.ssh.exec_command(command)
             return stdout.read().decode().strip()

@@ -1,15 +1,32 @@
+""" Work queue page """
+
+# Imports
+############################################################################################################
 import os
 import sys
 import pandas as pd
 import streamlit as st
+
 from labmonitor.data import Data
 from labmonitor.queue import Queue
 from datetime import datetime, time
 from labmonitor.connection import Connection
 from labmonitor.queue_job import QueueJob
 
-# Funções 
-def submit_job():
+
+# Functions
+############################################################################################################
+
+def submit_job() -> None:
+    """ Submit a job to the queue 
+    
+    Args:
+    - None
+    
+    Returns:
+    - None
+    """
+
     global queue
     with st.container(border=True):
         st.subheader("Submeter trabalho")
@@ -59,10 +76,28 @@ def submit_job():
                     st.error(f"Erro ao submeter: {e}")
 
 
-def remove_job():
+def remove_job() -> None:
+    """ Remove a job from the queue
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     pass
 
-def acompanhar():
+def acompanhar() -> None:
+    """ Track a job in the queue
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     global queue
     with st.container(border=True):
         st.subheader("Acompanhar trabalho")
@@ -101,8 +136,16 @@ def acompanhar():
             elif email.strip() != row_job['e-mail']:
                 st.error("E-mail indicando não corresponde ao cadastrado!")
 
+def script_exemple() -> None:
+    """ Show the example of a script
 
-def script_exemple():
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     with st.container():
         st.subheader("Exemplo de Script")
         path = "./labmonitor/example/script/"
@@ -120,8 +163,16 @@ def script_exemple():
                             mime='text/plain'
                         )
 
+def instru() -> None:
+    """ Show the instructions
 
-def instru():
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     txt = """
     1 - Verifique os programas disponíveis e como chamá-los nos scripts de uso.
     2 - Sempre o index da GPU será "0", designe este para aplicação, caso necessário.
@@ -137,7 +188,9 @@ def instru():
         st.text(txt)
 
 
-# Exc 
+# Main
+############################################################################################################
+
 st.sidebar.markdown("# Fila de trabalhos")
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.xlsx")
@@ -146,8 +199,16 @@ queue = QueueJob(data=data)
 st.subheader("Fila de trabalhos")
 st.dataframe(queue.df[queue.df['status'] != 'finalizado'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_requested', 'gpu_name']], use_container_width=True, hide_index=True)
 
-
-def nenhum():
+def nenhum() -> None:
+    """ Do nothing 
+    
+    Args:
+    - None
+    
+    Returns:
+    - None
+    """
+    
     pass
 
 action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho", "Exemplos de Script"])

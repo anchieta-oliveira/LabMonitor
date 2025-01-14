@@ -1,113 +1,81 @@
+""" Monitor class for system monitoring tasks on a remote machine. """
+
+# Imports
+############################################################################################################
 from labmonitor.connection import Connection
 
+
+# Class
+############################################################################################################
+
 class Monitor:
-    """
-    The Monitor class is responsible for performing various system monitoring tasks on a remote machine. 
-    It provides methods to monitor system resources such as CPU usage, GPU usage, RAM usage, disk usage, and 
-    logged-in users.
+    """ The Monitor class performs system monitoring tasks on a remote machine.
+
+    This class provides methods for retrieving system resource usage, managing users,
+    and monitoring logged-in sessions via an SSH connection.
 
     Attributes:
-        connection (Connection): An instance of the Connection class, used to execute SSH commands on the remote machine.
-    
+    - connection (Connection): An instance of the `Connection` class used to execute SSH commands.
+
     Methods:
-        __init__(connection: Connection):
-            Initializes the Monitor object with the provided Connection instance.
-        
-        get_usage_cpu() -> dict:
-            Retrieves the CPU usage percentage on the remote system.
-        
-        get_usage_gpu() -> dict:
-            Retrieves GPU usage details (memory used, memory total, utilization, processes, and users).
-        
-        get_usage_ram() -> dict:
-            Retrieves the RAM usage details (used, free, and total memory) on the remote system.
-        
-        get_usage_disk() -> dict:
-            Retrieves the disk usage details (mount point, total size, used space, available space, and usage percentage).
-        
-        get_users() -> dict:
-            Retrieves a list of users on the system, including their group memberships.
-        
-        add_new_user(username: str, password: str, sudo_password: str) -> str:
-            Adds a new user with the specified username and password.
-        
-        add_sudo_grup(username: str, sudo_password: str) -> str:
-            Adds the specified user to the sudo group.
-        
-        remove_sudo_grup(username: str, sudo_password: str) -> str:
-            Removes the specified user from the sudo group.
-        
-        remove_user(username: str, sudo_password: str) -> str:
-            Removes the specified user from the system.
-        
-        logged_users() -> dict:
-            Retrieves a list of currently logged-in users and their session information.
+    - get_usage_cpu: Retrieves CPU usage details.
+    - get_usage_gpu: Retrieves GPU usage details.
+    - get_usage_ram: Retrieves RAM usage details.
+    - get_usage_disk: Retrieves disk usage details.
+    - get_users: Retrieves user details.
+    - add_new_user: Adds a new user to the system.
+    - add_sudo_grup: Adds a user to the `sudo` group.
+    - remove_sudo_grup: Removes a user from the `sudo` group.
+    - remove_user: Deletes a user and their home directory.
+    - logged_users: Retrieves details of currently logged-in users.
     """
-    def __init__(self, connection:Connection):
+
+
+    def __init__(self, connection:Connection) -> None:
+        """ Initializes the Monitor object with the provided Connection instance.
+
+        Args:
+        - connection (Connection): An instance of the Connection class for executing SSH commands.
+
+        Returns:
+        - None
+        """
+
         self.connection = connection
     
-    def get_usage_cpu(self):
-        """
-        Retrieves the current CPU usage percentage on the connected machine by executing an SSH command.
+    def get_usage_cpu(self) -> dict:
+        """ Retrieves the current CPU usage percentage on the connected machine.
 
-        The method connects to the remote machine via SSH and executes a command that checks the CPU usage, 
-        specifically the percentage of CPU being used (combining the user and system CPU usage percentages). 
-        It then returns the result as a dictionary.
+        The method executes a command via SSH to check the CPU usage, specifically
+        the combined percentage of user and system CPU usage.
+
+        Args:
+        - None
 
         Returns:
-        - dict: A dictionary containing the CPU usage information.
-        Example:
-        {
-            "cpu_info": {
-                "cpu_usage_percentage": <float_value>
-            }
-        }
-
-        Example:
-        - cpu_usage = self.get_usage_cpu()
-        - print(cpu_usage["cpu_info"]["cpu_usage_percentage"])
+        - dict: A dictionary containing CPU usage information.
 
         Raises:
-        - Exception: If the SSH command fails or there is an issue with the connection.
+        - Exception: If the SSH command fails or the connection is invalid.
         """
+
         cpu_usage = float(self.connection.execute_ssh_command("top -bn1 | grep -i 'Cpu(s)' | awk '{print $2+$4}'").replace(',', '.'))
+        
         return {"cpu_info": {"cpu_usage_percentage": cpu_usage}}
 
-    def get_usage_gpu(self):
-        """
-        Retrieves the current GPU usage information, including memory usage, GPU utilization, 
-        the processes using the GPU, and the user associated with each process.
+    def get_usage_gpu(self) -> dict:
+        """ Retrieves GPU usage information on the connected machine.
 
-        The method connects to the remote machine via SSH and executes several commands to retrieve:
-        - GPU index, name, memory usage, and GPU utilization
-        - Processes currently using the GPU along with their associated user and process name.
+        The method executes commands via SSH to gather details about GPU memory usage, utilization, 
+        and processes using the GPU. It associates users with GPU processes when available.
 
         Returns:
-        - dict: A dictionary containing the GPU usage information for each GPU on the machine.
-        Example:
-        {
-            "gpu_info": [
-                {
-                    "gpu_index": <int>,
-                    "name": <str>,
-                    "memory_used": <float>,
-                    "memory_total": <float>,
-                    "utilization_gpu": <str>,
-                    "process": <str>,
-                    "user": <str>
-                },
-                ...
-            ]
-        }
-
-        Example:
-        - gpu_usage = self.get_usage_gpu()
-        - for gpu in gpu_usage["gpu_info"]:
-        -     print(f"GPU {gpu['gpu_index']} ({gpu['name']}) - {gpu['utilization_gpu']}% usage")
+        - dict: A dictionary containing GPU usage information.
 
         Raises:
-        - Exception: If the SSH command fails or there is an issue with the connection.
+        - Exception: If the SSH command fails or the output cannot be parsed.
         """
+
         gpu_info = []
         gpu_output = self.connection.execute_ssh_command("nvidia-smi --query-gpu=index,name,memory.used,memory.total,utilization.gpu --format=csv,noheader,nounits")
         gpu_lines = gpu_output.split("\n")
@@ -147,33 +115,19 @@ class Monitor:
                 
         return {"gpu_info": gpu_info}
 
-    def get_usage_ram(self):
-        """
-        Retrieves the current RAM usage information on the remote machine.
+    def get_usage_ram(self) -> dict:
+        """ Retrieves the current RAM usage information on the remote machine.
 
-        The method executes an SSH command to gather memory usage statistics via the `free` command 
+        The method executes an SSH command to gather memory usage statistics via the 'free' command 
         and returns the used, free, and total RAM on the system.
 
         Returns:
         - dict: A dictionary containing the RAM usage information.
-        Example:
-        {
-            "ram_info": {
-                "ram_used": <float>,   # RAM used in GB
-                "ram_free": <float>,   # RAM free in GB
-                "total_ram": <float>   # Total RAM in GB
-            }
-        }
-
-        Example:
-        - ram_usage = self.get_usage_ram()
-        - print(f"Used RAM: {ram_usage['ram_info']['ram_used']} GB")
-        - print(f"Free RAM: {ram_usage['ram_info']['ram_free']} GB")
-        - print(f"Total RAM: {ram_usage['ram_info']['total_ram']} GB")
 
         Raises:
         - Exception: If the SSH command fails or there is an issue with the connection.
         """
+
         ram_command = "free -g | awk '/^Mem/ {print $3, $4, $2}'"
         ram_data = self.connection.execute_ssh_command(ram_command).split()
         ram_used = float(ram_data[0])
@@ -189,39 +143,21 @@ class Monitor:
         }
     
 
-    def get_usage_disk(self):
-        """
-        Retrieves disk usage information from the remote machine.
+    def get_usage_disk(self) -> dict:
+        """ Retrieves disk usage information from the remote machine.
 
         The method executes an SSH command to gather disk space usage details, 
-        including total size, used space, available space, and usage percentage.
+        including total size, used space, available space, and usage percentage. 
         It filters out certain common system directories to provide information 
         about user-mounted disks.
 
         Returns:
         - dict: A dictionary containing disk usage information.
-        Example:
-        {
-            "disk_info": [
-                {
-                    "mount_point": <str>,     # Disk mount point (e.g., /home, /data)
-                    "total_size": <str>,      # Total size of the disk (e.g., 100G)
-                    "used": <str>,            # Used space on the disk (e.g., 50G)
-                    "available": <str>,       # Available space on the disk (e.g., 50G)
-                    "usage_percentage": <str> # Disk usage percentage (e.g., 50%)
-                },
-                ...
-            ]
-        }
-
-        Example:
-        - disk_usage = self.get_usage_disk()
-        - for disk in disk_usage['disk_info']:
-        -     print(f"Mount Point: {disk['mount_point']}, Usage: {disk['usage_percentage']}")
 
         Raises:
         - Exception: If the SSH command fails or there is an issue with the connection.
         """
+
         disk_command = "df -h --output=target,size,used,avail,pcent"
         disk_output = self.connection.execute_ssh_command(disk_command)
         lines = disk_output.split("\n")
@@ -239,10 +175,8 @@ class Monitor:
                 
         return {"disk_info": disk_info}
 
-
-    def get_users(self):
-        """
-        Retrieves a list of users on the remote machine with their associated groups.
+    def get_users(self) -> dict:
+        """ Retrieves a list of users on the remote machine with their associated groups.
 
         This method executes an SSH command to gather a list of users whose user ID (UID) 
         is greater than or equal to 1000 and less than 65534 (which typically corresponds to 
@@ -250,21 +184,11 @@ class Monitor:
 
         Returns:
         - dict: A dictionary where the keys are the usernames and the values are lists of groups the user belongs to.
-        Example:
-        {
-            "username1": ["group1", "group2"],
-            "username2": ["group1"],
-            ...
-        }
-
-        Example:
-        - users_info = self.get_users()
-        - for user, groups in users_info.items():
-        -     print(f"User: {user}, Groups: {', '.join(groups)}")
 
         Raises:
         - Exception: If the SSH command fails or there is an issue with the connection.
         """
+
         result = {}
         users_command = "awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd"
         users_output = self.connection.execute_ssh_command(users_command)
@@ -273,12 +197,11 @@ class Monitor:
         for u, g in zip(users, grups): result[u]=g
         return result
 
-    def add_new_user(self, username, password, sudo_password):
-        """
-        Adds a new user to the system with the specified username and password.
+    def add_new_user(self, username: str, password: str, sudo_password: str) -> str:
+        """ Adds a new user to the system with the specified username and password.
 
-        This method first uses `sudo` to create a new user with the `useradd` command and then sets the user's password
-        using `chpasswd`. The password is set for the newly created user.
+        This method first uses 'sudo' to create a new user with the 'useradd' command and then sets the user's password 
+        using 'chpasswd'. The password is set for the newly created user.
 
         Args:
         - username (str): The username for the new user to be created.
@@ -288,122 +211,100 @@ class Monitor:
         Returns:
         - str: The output of the command execution, which can indicate success or failure.
 
-        Example:
-        - output = self.add_new_user("new_user", "password123", "admin_sudo_password")
-        - print(output)
-
         Raises:
         - Exception: If the command execution fails or there is an issue with the connection.
         """
+
         new_user_cmd = f"""
                         echo '{sudo_password}' | sudo -S useradd -m {username} && \
                         echo '{password}:{password}' | sudo -S chpasswd"""
         useradd_output = self.connection.execute_ssh_command(new_user_cmd)
         return useradd_output
 
-    def add_sudo_grup(self, username, sudo_password):
-        """
-        Adds the specified user to the 'sudo' group, granting them sudo privileges.
+    def add_sudo_grup(self, username: str, sudo_password: str) -> str:
+        """ Adds the specified user to the 'sudo' group, granting them sudo privileges.
 
-        This method executes a command to add the user to the 'sudo' group, which allows the user to perform administrative
-        tasks by using `sudo` to execute commands with elevated privileges.
+        This method executes a command to add the user to the 'sudo' group, which allows the user to perform administrative 
+        tasks by using 'sudo' to execute commands with elevated privileges.
 
         Args:
         - username (str): The username of the user to be added to the 'sudo' group.
-        - sudo_password (str): The password for the current user (who has `sudo` privileges) to authenticate the `sudo` command.
+        - sudo_password (str): The password for the current user (who has 'sudo' privileges) to authenticate the 'sudo' command.
 
         Returns:
         - str: The output of the command execution, which can indicate success or failure.
 
-        Example:
-        - output = self.add_sudo_grup("new_user", "admin_sudo_password")
-        - print(output)
-
         Raises:
         - Exception: If the command execution fails or there is an issue with the connection.
         """
+
         sudo_user_cmd = f"""echo '{sudo_password}' | sudo -S usermod -aG sudo {username}"""
         addsudo_output = self.connection.execute_ssh_command(sudo_user_cmd)
+
         return addsudo_output
 
-    def remove_sudo_grup(self, username, sudo_password):
-        """
-        Removes the specified user from the 'sudo' group, revoking their sudo privileges.
+    def remove_sudo_grup(self, username: str, sudo_password: str) -> str:
+        """ Removes the specified user from the 'sudo' group, revoking their sudo privileges.
 
-        This method executes a command to remove the user from the 'sudo' group, thus preventing the user from performing
-        administrative tasks with `sudo` on the system.
+        This method executes a command to remove the user from the 'sudo' group, thus preventing the user from performing 
+        administrative tasks with 'sudo' on the system.
 
         Args:
         - username (str): The username of the user to be removed from the 'sudo' group.
-        - sudo_password (str): The password for the current user (who has `sudo` privileges) to authenticate the `sudo` command.
+        - sudo_password (str): The password for the current user (who has 'sudo' privileges) to authenticate the 'sudo' command.
 
         Returns:
         - str: The output of the command execution, which can indicate success or failure.
 
-        Example:
-        - output = self.remove_sudo_grup("user_to_remove", "admin_sudo_password")
-        - print(output)
-
         Raises:
         - Exception: If the command execution fails or there is an issue with the connection.
         """
+
         sudo_user_cmd = f"echo '{sudo_password}' | sudo -S deluser {username} sudo"
         removesudo_output = self.connection.execute_ssh_command(sudo_user_cmd)
+        
         return removesudo_output
 
-    def remove_user(self, username, sudo_password):
-        """
-        Removes a specified user and their home directory from the system.
+    def remove_user(self, username: str, sudo_password: str) -> str:
+        """ Removes a specified user and their home directory from the system.
 
         This method executes a command to delete the user account and its associated home directory 
-        from the system. The `sudo` password is required to authenticate the command.
+        from the system. The 'sudo' password is required to authenticate the command.
 
         Args:
         - username (str): The username of the user to be deleted.
-        - sudo_password (str): The password for the current user (who has `sudo` privileges) to authenticate the `sudo` command.
+        - sudo_password (str): The password for the current user (who has 'sudo' privileges) to authenticate the 'sudo' command.
 
         Returns:
         - str: The output of the command execution, which can indicate success or failure.
 
-        Example:
-        - output = self.remove_user("user_to_remove", "admin_sudo_password")
-        - print(output)
-
         Raises:
         - Exception: If the command execution fails or there is an issue with the connection.
         """
+
         remove_cmd = f"echo '{sudo_password}' | sudo -S userdel -r {username}"
         remove_output = self.connection.execute_ssh_command(remove_cmd)
+        
         return remove_output
 
-    def logged_users(self):
-        """
-        Retrieves the list of currently logged-in users and their session information.
+    def logged_users(self) -> dict:
+        """ Retrieves a list of currently logged-in users and their session information.
 
-        This method executes the `w` command to fetch details of users who are currently logged in to the system. 
-        The information extracted includes the user's name, terminal, source IP, login time, and CPU usage.
+        The method executes the `w` command via SSH to gather details about logged-in users, 
+        including username, terminal, source IP, login time, and CPU usage.
 
         Returns:
-        - dict: A dictionary containing the list of logged-in users with details such as:
-            - 'user': The username of the logged-in user.
-            - 'TTY': The terminal associated with the user.
-            - 'from': The source IP or hostname from which the user logged in.
-            - 'login_time': The time the user logged in.
-            - 'jcpu': The cumulative CPU time used by all processes associated with the session.
-
-        Example:
-        - logged_in_users = self.logged_users()
-        - print(logged_in_users)
-
-        If there is an error during command execution or parsing, the method will return an empty list with default values.
+        - dict: A dictionary containing logged-in user details.
 
         Raises:
-        - Exception: If the execution of the `w` command fails or the output is not in the expected format.
+        - Exception: If the SSH command fails or the output format is invalid.
         """
+
         res = []
         w_cmd = f"w -h"
         w_output = self.connection.execute_ssh_command(w_cmd)
         line = w_output.split("\n")
+
         try: 
             for usr in line:
                 info = usr.split()
@@ -415,11 +316,10 @@ class Monitor:
                             'login_time': info[3],
                             'jcpu': info[5],
                         })
+                        
         except Exception as e:
             res.append({'user': "", 'TTY': "", 'from': "", 'login_time':"", 'jcpu': "",})
             print(f"Erro: {e}")
             return {'logged_users': res}
         
         return {'logged_users': res}
-        
-
