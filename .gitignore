@@ -3,4 +3,8 @@
 *.py[cod]
 *.nbc
 *.nbi
-*machines.xlsx
+*json
+*log
+*xlsx
+email.json
+machines.xlsx
