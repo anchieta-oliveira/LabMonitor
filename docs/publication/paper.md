@@ -7,10 +7,10 @@ tags:
   - galactic dynamics
   - milky way
 authors:
-  - name: Adrian M. Price-Whelan
-    orcid: 0000-0000-0000-0000
+  - name: José de Anchieta de Oliveira Filho
+    orcid: 0000-0002-1904-3786
     equal-contrib: true
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
+    affiliation: 1 
   - name: Author Without ORCID
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: 2
@@ -22,7 +22,7 @@ authors:
     surname: Beethoven
     affiliation: 3
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University, United States
+ - name: Institute of Biophysics Carlos Chagas Filho, Federal University of Rio de Janeiro, Rio de Janeiro, Brazil
    index: 1
    ror: 00hx57361
  - name: Institution Name, Country
