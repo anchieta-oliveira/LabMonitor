@@ -38,8 +38,9 @@ if args.queue_job:
     data = Data()
     data.path_machines = "machines_job.xlsx"
     data.read_machines("machines_job.xlsx")
+    data.read_users("users.xlsx")
     q = QueueJob(data=data)
-    pq = multiprocessing.Process(target=q.monitor)
+    pq = multiprocessing.Process(target=q.monitor, args=[300])
     pq.start()
 
 
