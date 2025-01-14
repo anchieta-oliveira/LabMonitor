@@ -21,3 +21,14 @@ LabMonitor permite: 
 ```sh
 python3.12 main.py -s
 ```
+
+DOCUMENTATION
+-------------
+
+To build documentation, go to the root of the project and run
+
+```sh
+make html
+```
+
+The documentation will be available under the docs/build/html/index.html file.

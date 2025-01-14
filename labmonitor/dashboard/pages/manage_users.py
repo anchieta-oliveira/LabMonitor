@@ -1,12 +1,29 @@
+""" User management page """
+
+# Imports
+############################################################################################################
 import os
 import subprocess
 import pandas as pd
 import streamlit as st
+
 from labmonitor.monitor import Monitor
 from labmonitor.connection import Connection
 
-# Botão para criar novo usuário
+
+# Functions
+############################################################################################################
+
 def adduser():
+    """ [BUTTON] Add a new user to the machine
+    
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     with st.form("criar_usuario_form", clear_on_submit=True):
         username = st.text_input("Nome do Usuário", placeholder="Digite o nome do usuário")
         password = st.text_input("Senha do Usuário", type="password")
@@ -31,8 +48,15 @@ def adduser():
                 except Exception as e:
                     st.error(f"Erro ao criar o usuário: {e}")
         
-# Botão para excluir usuário
 def removeuser():
+    """ [BUTTON] Remove a user from the machine
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
 
     with st.form("excluir_usuario_form", clear_on_submit=True):
         selected_user = st.selectbox("Selecione o usuário para excluir:", users_df["Usuário"])
@@ -55,8 +79,16 @@ def removeuser():
                     print(e)
                     st.error(f"Erro ao criar o usuário: {e}")
 
-# Botão Tornar Sudo
 def addsudo():
+    """ [BUTTON] Add a user to the sudo group
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     with st.form("addsudo_usuario_form", clear_on_submit=True):
         selected_user = st.selectbox("Selecione o usuário para tornar sudo:", users_df["Usuário"])
         useradm = st.text_input("Usuário Administrador (sudo)")
@@ -77,6 +109,10 @@ def addsudo():
                 except Exception as e:
                     st.error(f"Erro ao criar o usuário: {e}")
 
+
+# Main
+############################################################################################################
+
 st.markdown("# Gerenciar usuários")
 st.sidebar.markdown("# Gerenciar usuários.")
 
@@ -87,7 +123,16 @@ df_filtrado = df[df['name'] == maquina_selecionada].dropna(axis=1, how='all')
 c = Connection(df_filtrado['ip'].iloc[0], df_filtrado['username'].iloc[0], df_filtrado['password'].iloc[0])
 m = Monitor(c)
 
-def run_get_user():
+def run_get_user() -> None:
+    """ Get the users from the machine
+
+    Args:
+    - None
+
+    Returns:
+    - None
+    """
+
     global users_df 
     users_df = pd.DataFrame([
         {"Usuário": usuario, "Grupos": grupos}
@@ -97,7 +142,6 @@ def run_get_user():
 
     st.subheader("Usuários")
     st.dataframe(users_df, use_container_width=True, hide_index=True)
-
 
 run_get_user()
 
