@@ -1,5 +1,5 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'LabMonitor: Simplified management of decentralized computational resources of Linux machines'
 tags:
   - Python
   - astronomy
@@ -9,15 +9,13 @@ tags:
 authors:
   - name: José de Anchieta de Oliveira Filho
     orcid: 0000-0002-1904-3786
-    equal-contrib: true
     affiliation: 1 
   - name: Guilherme Ian Spelta
     orcid: 0009-0000-6260-7068
-    equal-contrib: true
     affiliation: 1 
-  - name: Author Without ORCID
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affiliation: 2
+  - name: Artur Duque Rossi
+    orcid: 0000-0002-5717-2116
+    affiliation: 1
   - name: Author with no affiliation
     corresponding: true # (This is how to denote the corresponding author)
     affiliation: 3
@@ -28,11 +26,6 @@ authors:
 affiliations:
  - name: Institute of Biophysics Carlos Chagas Filho, Federal University of Rio de Janeiro, Rio de Janeiro, Brazil
    index: 1
-   ror: 00hx57361
- - name: Institution Name, Country
-   index: 2
- - name: Independent Researcher, Country
-   index: 3
 date: 13 August 2017
 bibliography: paper.bib
 
