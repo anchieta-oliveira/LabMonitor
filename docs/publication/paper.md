@@ -11,6 +11,10 @@ authors:
     orcid: 0000-0002-1904-3786
     equal-contrib: true
     affiliation: 1 
+  - name: Guilherme Ian Spelta
+    orcid: 0009-0000-6260-7068
+    equal-contrib: true
+    affiliation: 1 
   - name: Author Without ORCID
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: 2
