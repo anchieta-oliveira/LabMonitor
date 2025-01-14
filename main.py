@@ -78,7 +78,7 @@ if args.start:
         script_path =  os.path.dirname(os.path.abspath(sys.argv[0]))
 
         # Start the streamlit
-        os.system(f"streamlit run {script_path}/labmonitor/Dashbord/main_page.py {script_path}")
+        os.system(f"streamlit run {script_path}/labmonitor/dashboard/main_page.py {script_path}")
         print("Streamlit iniciado. ")
     except Exception as e:
         print(f"Erro ao iniciar o Streamlit: {e}")
