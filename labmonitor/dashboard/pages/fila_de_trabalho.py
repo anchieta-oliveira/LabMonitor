@@ -71,7 +71,7 @@ def submit_job() -> None:
                                 )
 
                     st.success(f"Trabalho submetido com sucesso '{username}'")
-                    queue.update_status_machines()
+
                 except Exception as e:
                     st.error(f"Erro ao submeter: {e}")
 
