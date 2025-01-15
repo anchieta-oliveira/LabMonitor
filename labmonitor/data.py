@@ -48,8 +48,17 @@ class Data:
         """
 
         self.path_machines = path
-        self.machines = pd.read_excel(path)
-        
+        try:
+            self.machines = pd.read_excel(path)
+        except Exception as e:
+            print(f"Erro ao ler o arquivo {path}: {e}")
+            backup_path = f"{os.path.splitext(path)[0]}_old{os.path.splitext(path)[1]}"
+            try:
+                self.machines = pd.read_excel(backup_path)
+                print(f"Arquivo de backup {backup_path} carregado com sucesso.")
+            except Exception as e_backup:
+                print(f"Erro ao ler o arquivo de backup {backup_path}: {e_backup}")
+            
         return self.machines
 
     def save_machines(self, path: str = f"") -> None:
