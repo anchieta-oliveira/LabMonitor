@@ -72,9 +72,21 @@ class QueueJob:
         """
 
         if os.path.exists(path):
-            self.df = pd.read_excel(path)
-            self.df['fim'] = self.df['fim'] = pd.to_datetime(self.df['fim'])
-            self.df['inicio'] = self.df['inicio'] = pd.to_datetime(self.df['inicio'])
+            try:
+                self.df = pd.read_excel(path)
+                self.df['fim'] = pd.to_datetime(self.df['fim'])
+                self.df['inicio'] = pd.to_datetime(self.df['inicio'])
+            except Exception as e:
+                print(f"Erro ao ler o arquivo {path}: {e}")
+                backup_path = f"{os.path.splitext(path)[0]}_old{os.path.splitext(path)[1]}"
+                try:
+                    self.df = pd.read_excel(backup_path)
+                    self.df['fim'] = pd.to_datetime(self.df['fim'])
+                    self.df['inicio'] = pd.to_datetime(self.df['inicio'])
+                    print(f"Arquivo de backup {backup_path} carregado com sucesso.")
+                except Exception as e_backup:
+                    print(f"Erro ao ler o arquivo de backup {backup_path}: {e_backup}")
+                    self.reset()
         else:
             self.reset()
 
@@ -93,8 +105,17 @@ class QueueJob:
         - Writes the contents of the DataFrame `self.df` to an Excel file specified by `self.path`.
         - The file is saved without including the index.
         """
+        backup_path = f"{os.path.splitext(self.path)[0]}_old{os.path.splitext(self.path)[1]}"
+        
+        try:
+            if os.path.exists(self.path):
+                os.rename(self.path, backup_path)
 
-        self.df.to_excel(self.path, index=False)
+            self.df.to_excel(self.path, index=False)
+        except Exception as e:
+            print("Erro ao salvar o arquivo:", e)
+
+        
 
     def reset(self) -> pd.DataFrame:
         """ Resets the DataFrame to a default structure and saves it to an Excel file.
@@ -1122,6 +1143,7 @@ with open("labmonitor.status", "w") as log:
                   "": self.__nenhum
                   }
         
+        self.data.read_users()
         self.read_excel()
         self.update_status_machines()
         self.update_status_jobs()
