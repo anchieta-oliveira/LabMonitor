@@ -9,6 +9,7 @@ tags:
 authors:
   - name: José de Anchieta de Oliveira Filho
     orcid: 0000-0002-1904-3786
+    corresponding: true
     affiliation: 1 
   - name: Guilherme Ian Spelta
     orcid: 0009-0000-6260-7068
@@ -16,17 +17,14 @@ authors:
   - name: Artur Duque Rossi
     orcid: 0000-0002-5717-2116
     affiliation: 1
-  - name: Author with no affiliation
-    corresponding: true # (This is how to denote the corresponding author)
-    affiliation: 3
-  - given-names: Ludwig
-    dropping-particle: van
-    surname: Beethoven
-    affiliation: 3
+  - name: Pedro Henrique Monteiro Torres
+    affiliation: 1
+  - given-names: Pedro Geraldo Pascutti
+    affiliation: 1
 affiliations:
  - name: Institute of Biophysics Carlos Chagas Filho, Federal University of Rio de Janeiro, Rio de Janeiro, Brazil
    index: 1
-date: 13 August 2017
+date: 16 January 2025
 bibliography: paper.bib
 
 ---
@@ -39,37 +37,13 @@ The efficient management of computing resources is a significant challenge, espe
 
 # Statement of need
 
-Managing computing resources in academic environments is an essential task, especially when several machines are networked to carry out intensive scientific work. Tools such as Slurm`[@Yoo:2003; @Iserte:2014]` and HTCondor`[@Thain:2005]` are widely used to manage work queues and allocate computing cluster resources. Slurm, for example, is a robust tool designed for managing computer clusters, where the machines are usually centralized and connected by high-speed networks. However, this solution is not ideal for decentralized networks, where machines may be scattered in different locations and connected via the internet. On the other hand, HTCondor is known for its flexibility in managing pools of heterogeneous machines, including decentralized networks. However, its configuration and operation can be complex, requiring significant technical knowledge to fine-tune the various options available `[@Yoo:2003; @Thain:2005; @Iserte:2014]`.
-Although these tools are powerful, the complexity of their configuration and operation can be a barrier for many users in academic environments, where specialized technical support is not always available`[@Georgiou:2013; @Varrette:2022]`. To fill this gap, we developed LabMonitor, a Python application designed to simplify the management of computing resources in decentralized networks of Linux machines.
-LabMonitor, a Python application that is intuitive and easy to use, eliminating the need for complex configurations. Initial configuration can be done by filling in a spreadsheet with information about the machines and, optionally, the users. With the execution of a single command, the system is ready to use, allowing users to manage and monitor resources via a graphical platform. Submitting jobs to LabMonitor is done via a simple interface, which also offers e-mail notifications to update users on the status of their jobs. In addition, the system includes a resource scheduling feature, allowing users to reserve machines for specific tasks. This scheduling feature provides a structured way of planning the use of computing resources. By simplifying the process of managing computing resources, LabMonitor becomes a valuable tool for researchers who want to maximize the use of their machines without the need for advanced technical expertise. This allows researchers to devote themselves to the object of their research and not to the difficulties of managing computing resources.
+Managing computing resources in academic environments is an essential task, especially when several machines are networked to carry out intensive scientific work. Tools such as SLURM [@Yoo:2003; @Iserte:2014] and HTCondor [@Thain:2005] are widely used to manage work queues and allocate computing cluster resources. SLURM, for instance, is a robust tool designed for managing computer clusters, where the resources are usually centralized and connected by high-speed networks. However, this solution is not ideal for decentralized resources, where machines may be scattered in different locations and sometimes, connected through the internet. On the other hand, HTCondor is known for its flexibility in managing pools of heterogeneous machines, including decentralized resources. Nevertheless, its configuration and operation can be complex, requiring significant technical knowledge to fine-tune the various options available [@Yoo:2003; @Thain:2005; @Iserte:2014].
+Although these tools are powerful, the complexity of their configuration and operation can be a barrier for many users in academic environments, where specialized technical support is not always available [@Georgiou:2013; @Varrette:2022]. To fill this gap, we developed LabMonitor, a Python application designed to simplify the management of computing resources in decentralized networks of Linux machines.
+LabMonitor is a Python application that is intuitive and easy to use, eliminating the need for complex configurations. Initial configuration can be done by filling in a spreadsheet with information about the machines and, optionally, the users. With the execution of a single command, the system is ready to use, allowing users to manage and monitor resources through a local web platform. Submitting jobs to LabMonitor is done through a simple interface, which also enables e-mail notifications to update users on the status of their jobs. In addition, the system includes a resource scheduling feature, allowing users to reserve machines for specific tasks. This scheduling feature provides a structured way of planning the use of computing resources. By simplifying the process of managing computing resources, LabMonitor becomes a valuable tool for researchers who want to maximize the use of their machines without the need for advanced technical expertise. This allows researchers to devote themselves to the object of their research and not to the difficulties of managing computing resources.
 
-
-# Citations
-
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
-
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
-
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
-
-# Figures
-
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
-
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% }
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+We acknowledge the Laboratory for Molecular Dynamics and Modelling (LMDM) for their contribution by providing access to the computational resources that made this work possible. We also thank the Carlos Chagas Filho Biophysics Institute (IBCCF) and the Federal University of Rio de Janeiro (UFRJ) for their support, as LMDM is a part of IBCCF within UFRJ.
 
 # References
