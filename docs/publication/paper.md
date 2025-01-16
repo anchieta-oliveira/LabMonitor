@@ -17,9 +17,14 @@ authors:
   - name: Artur Duque Rossi
     orcid: 0000-0002-5717-2116
     affiliation: 1
+  - name: Mariana Simões Ferreira
+    orcid: 
+    affiliation: 1
   - name: Pedro Henrique Monteiro Torres
+    orcid: 0000-0002-0945-1495
     affiliation: 1
   - given-names: Pedro Geraldo Pascutti
+    orcid: 0000-0002-5454-560X
     affiliation: 1
 affiliations:
  - name: Institute of Biophysics Carlos Chagas Filho, Federal University of Rio de Janeiro, Rio de Janeiro, Brazil
