@@ -18,7 +18,7 @@ authors:
     orcid: 0000-0002-5717-2116
     affiliation: 1
   - name: Mariana Simões Ferreira
-    orcid: 
+    orcid: 0000-0001-9014-4478
     affiliation: 1
   - name: Pedro Henrique Monteiro Torres
     orcid: 0000-0002-0945-1495
