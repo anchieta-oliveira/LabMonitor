@@ -15,8 +15,8 @@ class Data:
     
     Attributes:
     - machines (pd.DataFrame): DataFrame with the machines information
-    - path_machines (str): Path to the machines Excel file
-    - path_users (str): Path to the users Excel file
+    - path_machines (str): Path to the machines csv file
+    - path_users (str): Path to the users csv file
     - users (pd.DataFrame): DataFrame with the users information
     - email (dict): Dictionary with the email information
     """
@@ -37,11 +37,11 @@ class Data:
         self.users = pd.DataFrame()
         self.email = {}
 
-    def read_machines(self, path: str = f"{current_dirname_path}/../machines.xlsx"):
-        """ Read the machines information from an Excel file
+    def read_machines(self, path: str = f"{current_dirname_path}/../machines.csv"):
+        """ Read the machines information from an csv file
         
         Args:
-        - path (str, optional): Path to the Excel file with the machines information. Defaults to f"{current_dirname_path}/../machines.xlsx".
+        - path (str, optional): Path to the csv file with the machines information. Defaults to f"{current_dirname_path}/../machines.csv".
 
         Returns:
         - pd.DataFrame: DataFrame with the machines information
@@ -49,23 +49,23 @@ class Data:
 
         self.path_machines = path
         try:
-            self.machines = pd.read_excel(path)
+            self.machines = pd.read_csv(path)
         except Exception as e:
-            print(f"Erro ao ler o arquivo {path}: {e}")
+            print(f"Error reading the file {path}: {e}", flush=True)
             backup_path = f"{os.path.splitext(path)[0]}_old{os.path.splitext(path)[1]}"
             try:
-                self.machines = pd.read_excel(backup_path)
-                print(f"Arquivo de backup {backup_path} carregado com sucesso.")
+                self.machines = pd.read_csv(backup_path)
+                print(f"Backup file {backup_path} uploaded successfully.", flush=True)
             except Exception as e_backup:
-                print(f"Erro ao ler o arquivo de backup {backup_path}: {e_backup}")
+                print(f"Error reading the backup file {backup_path}: {e_backup}", flush=True)
             
         return self.machines
 
     def save_machines(self, path: str = f"") -> None:
-        """ Save the machines information to an Excel file
+        """ Save the machines information to an CSV file
 
         Args:
-        - path (str, optional): Path to save the Excel file with the machines information. Defaults to "".
+        - path (str, optional): Path to save the csv file with the machines information. Defaults to "".
 
         Returns:
         - None
@@ -77,16 +77,16 @@ class Data:
     
         try:
             if os.path.exists(path): os.rename(path, backup_path)
-            self.machines.to_excel(path, index=False)
+            self.machines.to_csv(path, index=False)
             
         except Exception as e:
-            print("Erro ao salvar o arquivo:", e)
+            print("Error saving the file:", e, flush=True)
 
-    def read_users(self, path: str = f"{current_dirname_path}/../users.xlsx") -> pd.DataFrame:
-        """ Read the users information from an Excel file
+    def read_users(self, path: str = f"{current_dirname_path}/../users.csv") -> pd.DataFrame:
+        """ Read the users information from an csv file
 
         Args:
-        - path (str, optional): Path to the Excel file with the users information. Defaults to f"{current_dirname_path}/../users.xlsx".
+        - path (str, optional): Path to the csv file with the users information. Defaults to f"{current_dirname_path}/../users.csv".
 
         Returns:
         - pd.DataFrame: DataFrame with the users information
@@ -94,10 +94,10 @@ class Data:
 
         try:
             self.path_users = path
-            self.users = pd.read_excel(path)
+            self.users = pd.read_csv(path)
         
         except Exception as e:
-            print(f"Não foi possivel carregar as informações de usuários: {e}")
+            print(f"Unable to load user information: {e}", flush=True)
 
         return self.users
 
@@ -118,6 +118,6 @@ class Data:
                 return self.email
             
         except Exception as e:
-            print(f"Não foi possivel carregar as informações de e-mial: {e}")
+            print(f"The email information could not be uploaded: {e}", flush=True)
             return self.email
     
