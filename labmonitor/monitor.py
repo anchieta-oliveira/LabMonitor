@@ -111,7 +111,7 @@ class Monitor:
                     'user': gpu_users[i],
                 })
             except Exception as e:
-                print(f"Erro GPU {line}\n{e}")
+                print(f"Erro GPU {line}\n{e}", flush=True)
                 
         return {"gpu_info": gpu_info}
 
@@ -319,7 +319,7 @@ class Monitor:
                         
         except Exception as e:
             res.append({'user': "", 'TTY': "", 'from': "", 'login_time':"", 'jcpu': "",})
-            print(f"Erro: {e}")
+            print(f"Erro: {e}", flush=True)
             return {'logged_users': res}
         
         return {'logged_users': res}
