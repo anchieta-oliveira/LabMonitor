@@ -30,33 +30,33 @@ def run(ip: str, name: str, user: str, pw: str) -> tuple[str, dict]:
     """
 
     try:
-        print(f"Conectando a {ip}...")
+        print(f"Connecting to {ip}...")
         results = {}
         c = Connection(ip, user, pw)
         m = Monitor(c)
     except Exception as e:
-        print(f"Erro ao conectar a {ip}: {e}")
+        print(f"Error connecting to {ip}: {e}")
         return name, None
 
     try: 
         results.update(m.get_usage_cpu())
     except Exception as e:
         results.update({"cpu_info": {"cpu_usage_percentage": -1}})
-        print(f"Erro ao obter informações de CPU de {ip}: {e}")
+        print(f"Error getting CPU information from {ip}: {e}")
     try:
         results.update(m.get_usage_gpu())
     except Exception as e:
         results.update({"gpu_info": []})
-        print(f"Erro ao obter informações de GPU de {ip}: {e}")
+        print(f"Error getting GPU information from {ip}: {e}")
     try:
         results.update(m.get_usage_ram())
     except Exception as e:
         {"ram_info": {"ram_used": -1,"ram_free": -1,"total_ram": -1}}
-        print(f"Erro ao obter informações de RAM de {ip}: {e}")
+        print(f"Error getting RAM information from{ip}: {e}")
     try:
         results.update(m.get_usage_disk())
     except Exception as e:
-        print(f"Erro ao obter informações de disco de {ip}: {e}")
+        print(f"Error getting disk information from {ip}: {e}")
 
     return name, results
 
@@ -127,11 +127,11 @@ disk_data = pd.DataFrame(disk_data)
 
 # Exibir as tabelas no Streamlit
 
-st.markdown("# Tempo Real")
-st.sidebar.markdown("# Tempo Real")
-st.subheader("Uso de CPU e RAM")
+st.markdown("# Real Time")
+st.sidebar.markdown("# Real Time")
+st.subheader("CPU and RAM")
 st.dataframe(cpu_ram_df.sort_values(by='CPU Usage (%)', ascending=False), use_container_width=True, hide_index=True)
-st.subheader("Uso de GPUs")
+st.subheader("GPUs")
 st.dataframe(gpu_df.sort_values(by='ID', ascending=False), use_container_width=True, hide_index=True)
-st.subheader("Uso de Discos")
+st.subheader("Disks")
 st.dataframe(disk_data, use_container_width=True, hide_index=True)
