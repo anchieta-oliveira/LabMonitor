@@ -18,16 +18,15 @@ from labmonitor.queue_job import QueueJob
 ############################################################################################################
 
 # Create the parser
-parser = ap.ArgumentParser(description='Monitoramento de recurso de maquinas Linux em rede local e apresentação em Dashbord.',
+parser = ap.ArgumentParser(description='LabMonitor, a Python application designed to simplify the management of computing resources in decentralized networks of Linux machines.',
                            formatter_class=ap.RawTextHelpFormatter )
 
 # Add the arguments
-parser.add_argument('-f','--file', help='Arquivo de configurações.')
+parser.add_argument('-f','--file', help='Settings file.')
 parser.add_argument('-s', '--start', action='store_true', help='Start Dashbord.')
-parser.add_argument('-sh', '--histoy', action='store_true', help='Salvar histórico das maquinas.')
-parser.add_argument('-sq', '--queue', action='store_true', help='Monitorar fila. ')
-parser.add_argument('-sqj', '--queue_job', action='store_true', help='Monitorar fila de trabalho. ')
-parser.add_argument('-ph','--path_history', default=os.path.dirname(os.path.abspath(__file__)), help='Arquivo de configurações.')
+parser.add_argument('-sh', '--histoy', action='store_true', help='Save machine history.')
+parser.add_argument('-sq', '--queue', action='store_true', help='Monitor queue.')
+parser.add_argument('-sqj', '--queue_job', action='store_true', help='Monitor the job queue.')
 
 # Execute the parse_args() method
 args = parser.parse_args()
@@ -79,6 +78,6 @@ if args.start:
 
         # Start the streamlit
         os.system(f"streamlit run {script_path}/labmonitor/dashboard/main_page.py {script_path}")
-        print("Streamlit iniciado. ")
+        print("Streamlit started.")
     except Exception as e:
-        print(f"Erro ao iniciar o Streamlit: {e}")
+        print(f"Error starting Streamlit: {e}")
