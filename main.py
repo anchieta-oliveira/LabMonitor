@@ -64,9 +64,9 @@ if args.queue_job:
     # Create the data object
     data = Data()
 
-    #Set the path of the machines xlsx file
-    data.path_machines = "machines_job.xlsx"
-    data.read_machines("machines_job.xlsx")
+    #Set the path of the machines csv file
+    data.path_machines = "machines_job.csv"
+    data.read_machines("machines_job.csv")
     q = QueueJob(data=data)
     pq = multiprocessing.Process(target=q.monitor)
     pq.start()
