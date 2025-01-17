@@ -29,9 +29,9 @@ class Queue:
     machines (list): List of machines available, fetched from the `data` instance.
 
     Methods:
-        __init__(self, data: Data, path: str = "queue.xlsx"): Initializes the Queue object, reads the csv file, and stores the data.
+        __init__(self, data: Data, path: str = "queue.csv"): Initializes the Queue object, reads the csv file, and stores the data.
 
-        read_csv(self, path: str = "queue.xlsx") -> pd.DataFrame:  Reads the csv file and returns the schedule data as a DataFrame.
+        read_csv(self, path: str = "queue.csv") -> pd.DataFrame:  Reads the csv file and returns the schedule data as a DataFrame.
 
         save(self): Saves the current queue data (DataFrame) back to the csv file.
 
@@ -58,14 +58,14 @@ class Queue:
         __send_mail(self, subject: str, message: str, to: str, subtype: str = "plain") -> bool:  Sends an email with the provided subject, message, and recipient.
         """
     
-    def __init__(self, data: Data, path: str = "queue.xlsx") -> None:
+    def __init__(self, data: Data, path: str = "queue.csv") -> None:
         """ Constructor for the Queue class.
 
         Initializes the Queue object with the provided Data instance and reads the csv file at the specified path.
 
         Args:
         - data (Data): An instance of the Data class that holds machine and email information.
-        - path (str): The file path for the csv file storing the queue data. Defaults to "queue.xlsx".
+        - path (str): The file path for the csv file storing the queue data. Defaults to "queue.csv".
 
         Returns:
         - None
@@ -76,7 +76,7 @@ class Queue:
         self.data = data
         self.machines = data.machines
 
-    def read_csv(self, path: str = "queue.xlsx") -> pd.DataFrame:
+    def read_csv(self, path: str = "queue.csv") -> pd.DataFrame:
         """ Reads an csv file and loads it into a pandas DataFrame.
 
         This method checks if the specified csv file exists at the given `path`. If the file exists, 
@@ -84,7 +84,7 @@ class Queue:
         and stores the result in the instance attribute `self.df`. If the file doesn't exist, it resets the DataFrame.
 
         Args:
-        - path (str): The file path of the csv file to read. Defaults to 'queue.xlsx'.
+        - path (str): The file path of the csv file to read. Defaults to 'queue.csv'.
 
         Returns:
         - pd.DataFrame: The DataFrame containing the data from the csv file.
@@ -117,7 +117,7 @@ class Queue:
         """ Resets the DataFrame to its initial structure and saves it to an csv file.
 
         This method creates a new empty DataFrame with predefined column names and stores it in the instance attribute `self.df`.
-        The DataFrame is then saved to an csv file called 'queue.xlsx', with no index included in the file.
+        The DataFrame is then saved to an csv file called 'queue.csv', with no index included in the file.
 
         Args:
         - None
@@ -128,7 +128,7 @@ class Queue:
 
         columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_last_day", "notification_fist_day"]
         self.df = pd.DataFrame(columns = columns)
-        self.df.to_csv("queue.xlsx", index=False)
+        self.df.to_csv("queue.csv", index=False)
         return self.df
 
     def insert(self, ip: str, name: str, username: str, inicio: str, fim: str, n_cpu: int, gpu_index: int, gpu_name: str, email: str, to_send: bool = True) -> pd.DataFrame:
@@ -215,7 +215,7 @@ class Queue:
         - "Em espera" if the current date and time is before 'inicio'.
         - "Finalizado" if the current date and time is after 'fim'.
         
-        After updating the status, the DataFrame is saved to an csv file ("queue.xlsx").
+        After updating the status, the DataFrame is saved to an csv file ("queue.csv").
 
         Args:
         - None
@@ -229,7 +229,7 @@ class Queue:
                                 "Executando" if row['inicio'] <= data_atual and row['fim'] >= data_atual else 
                                 "Em espera" if row['inicio'] > data_atual else 
                                 "Finalizado", axis=1)
-        self.df.to_csv("queue.xlsx", index=False)
+        self.df.to_csv("queue.csv", index=False)
         return self.df
         
     def __last_day(self) -> pd.DataFrame:
