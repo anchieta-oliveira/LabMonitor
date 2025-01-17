@@ -13,7 +13,7 @@ import plotly.express as px
 st.markdown("# Histórico")
 st.sidebar.markdown("# Histórico de uso.")
 
-df = pd.read_excel(f"{os.path.dirname(os.path.abspath(__file__))}/../../../history.xlsx")
+df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../history.xlsx")
 
 
 maquinas = df['Name'].unique()
