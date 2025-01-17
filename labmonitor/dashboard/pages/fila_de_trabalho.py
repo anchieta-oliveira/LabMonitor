@@ -29,35 +29,35 @@ def submit_job() -> None:
 
     global queue
     with st.container(border=True):
-        st.subheader("Submeter trabalho")
+        st.subheader("Submit job")
         
         data_g = Data(); data_g.read_machines(path=f"{sys.argv[1]}/machines.csv")
 
-        with st.expander(f"Máquinas recebendo trabalhos"):
+        with st.expander(f"Machines receiving jobs"):
             st.dataframe(queue.data.machines[['name', 'allowed_cpu', 'name_allowed_gpu']],  hide_index=True, use_container_width=True)
         
 
-        n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
+        n_cpu = st.number_input("Number of CPUs", min_value=1, step=1)
 
         gpus = ["all"]
         selected_gpus = []
         for i in queue.data.machines['name_allowed_gpu']:
             gpus.extend(i.split(","))
 
-        selected_gpus = st.multiselect("Selecione as GPUs requisitadas", list(set(gpus)))
+        selected_gpus = st.multiselect("Select the required GPUs", list(set(gpus)))
                 
-        machine_origin = st.selectbox('Máquina de origem', data_g.machines['name'])
-        path_origin = st.text_input("Diretorio com arquivos de trabalho (máquina de origem)")
-        script_name = st.text_input("Nome do script (.sh)")
-        job_name = st.text_input("Nome do trabalho")
+        machine_origin = st.selectbox('Source machine', data_g.machines['name'])
+        path_origin = st.text_input("Directory with working files (source machine)")
+        script_name = st.text_input("Script name (.sh)")
+        job_name = st.text_input("Job name")
         username = st.text_input("Username")
         email = st.text_input("e-mail")
         
-        submitted = st.button("Submeter")
+        submitted = st.button("Submit")
 
         if submitted:
             if not username or not n_cpu or not email or not path_origin or not script_name or not machine_origin:
-                st.error("Por favor, preencha todos os campos.")
+                st.error("Please fill in all the fields.")
             else:
                 try:
                     queue.read_csv()
@@ -71,10 +71,10 @@ def submit_job() -> None:
                                 gpus=selected_gpus
                                 )
 
-                    st.success(f"Trabalho submetido com sucesso '{username}'")
+                    st.success(f"Job submitted successfully '{username}'")
 
                 except Exception as e:
-                    st.error(f"Erro ao submeter: {e}")
+                    st.error(f"Error submitting: {e}")
 
 
 def remove_job() -> None:
@@ -101,7 +101,7 @@ def acompanhar() -> None:
 
     global queue
     with st.container(border=True):
-        st.subheader("Acompanhar trabalho")
+        st.subheader("Monitoring job")
         
         try:
             trabalhos = queue.df[queue.df['status'] == 'running'].apply(
@@ -110,18 +110,18 @@ def acompanhar() -> None:
         except Exception as e:
             trabalhos = []
         
-        trabalho = st.selectbox('Escolha o trabalho', trabalhos)
+        trabalho = st.selectbox('Choose the job', trabalhos)
 
         email = st.text_input("E-mail")
-        sufix = st.text_input("Sufixo dos arquivos", value=".log")
-        ver = st.button("Ver")
+        sufix = st.text_input("File suffix", value=".log")
+        ver = st.button("View")
 
         if ver:
             nome_maquina, usuario, job_name, submit = trabalho.split(' - ')
 
             row_job = queue.df[(queue.df['name'] == nome_maquina.strip()) & (queue.df['username'] == usuario.strip()) & (queue.df['job_name'] == job_name.strip()) & (queue.df['submit'] == submit.strip())].iloc[0]
             if not email:
-                st.error("Por favor, preencha todos os campos.")
+                st.error("Please fill in all the fields.")
             elif email.strip() == row_job['e-mail']:
                 logs = queue.view_job_log(job_row=row_job, sufix="*"+sufix)
                 try:
@@ -132,10 +132,10 @@ def acompanhar() -> None:
                                     unsafe_allow_html=True
                                 )
                 except Exception as e:
-                    st.error(f"Erro ao ver saída de trabalhos: {e}")
+                    st.error(f"Error viewing job output: {e}")
             
             elif email.strip() != row_job['e-mail']:
-                st.error("E-mail indicando não corresponde ao cadastrado!")
+                st.error("The indicated email does not match the registered one!")
 
 def script_exemple() -> None:
     """ Show the example of a script
@@ -148,7 +148,7 @@ def script_exemple() -> None:
     """
 
     with st.container():
-        st.subheader("Exemplo de Script")
+        st.subheader("Example Script")
         path = "./labmonitor/example/script/"
         
         if os.path.exists(path):
@@ -158,7 +158,7 @@ def script_exemple() -> None:
                         file_content = f.read()
                         st.text(file_content)
                         st.download_button(
-                            label="Download arquivo",
+                            label="Download",
                             data=file_content,
                             file_name=file,
                             mime='text/plain'
@@ -192,12 +192,12 @@ def instru() -> None:
 # Main
 ############################################################################################################
 
-st.sidebar.markdown("# Fila de trabalhos")
+st.sidebar.markdown("# Job Queue")
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.csv")
 queue = QueueJob(data=data)
 
-st.subheader("Fila de trabalhos")
+st.subheader("Job Queue")
 st.dataframe(queue.df[queue.df['status'] != 'finished'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_requested', 'gpu_name']], use_container_width=True, hide_index=True)
 
 def nenhum() -> None:
@@ -212,8 +212,8 @@ def nenhum() -> None:
     
     pass
 
-action = st.selectbox("Escolha uma ação", ["Selecione", "Submeter Trabalho", "Remover trabalho", "Acompanhar trabalho", "Exemplos de Script"])
-fun = {"Selecione": nenhum, "Submeter Trabalho": submit_job, "Remover trabalho": remove_job, "Acompanhar trabalho": acompanhar, "Exemplos de Script": script_exemple}
+action = st.selectbox("Action", ["Select", "Submit Job", "Remove job", "Monitoring job", "Script examples"])
+fun = {"Select": nenhum, "Submit Job": submit_job, "Remove job": remove_job, "Monitoring job": acompanhar, "Script examples": script_exemple}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
