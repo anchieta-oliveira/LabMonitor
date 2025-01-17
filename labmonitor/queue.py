@@ -20,20 +20,20 @@ class Queue:
     """ Queue class to manage a queue of scheduled tasks for machines.
 
     A class to manage a queue of scheduled tasks for machines, including reading from and writing to
-    an Excel file, updating task statuses, and sending email notifications.
+    an csv file, updating task statuses, and sending email notifications.
 
     Attributes:
     df (pd.DataFrame): DataFrame holding the schedule of tasks with machine and user details.
-    path (str): The file path for the Excel file storing the queue data.
+    path (str): The file path for the csv file storing the queue data.
     data (Data): An instance of the Data class that holds machine and email information.
     machines (list): List of machines available, fetched from the `data` instance.
 
     Methods:
-        __init__(self, data: Data, path: str = "queue.xlsx"): Initializes the Queue object, reads the Excel file, and stores the data.
+        __init__(self, data: Data, path: str = "queue.xlsx"): Initializes the Queue object, reads the csv file, and stores the data.
 
-        read_excel(self, path: str = "queue.xlsx") -> pd.DataFrame:  Reads the Excel file and returns the schedule data as a DataFrame.
+        read_csv(self, path: str = "queue.xlsx") -> pd.DataFrame:  Reads the csv file and returns the schedule data as a DataFrame.
 
-        save(self): Saves the current queue data (DataFrame) back to the Excel file.
+        save(self): Saves the current queue data (DataFrame) back to the csv file.
 
         reset(self) -> pd.DataFrame: Resets the queue to an empty DataFrame with predefined columns.
 
@@ -61,37 +61,37 @@ class Queue:
     def __init__(self, data: Data, path: str = "queue.xlsx") -> None:
         """ Constructor for the Queue class.
 
-        Initializes the Queue object with the provided Data instance and reads the Excel file at the specified path.
+        Initializes the Queue object with the provided Data instance and reads the csv file at the specified path.
 
         Args:
         - data (Data): An instance of the Data class that holds machine and email information.
-        - path (str): The file path for the Excel file storing the queue data. Defaults to "queue.xlsx".
+        - path (str): The file path for the csv file storing the queue data. Defaults to "queue.xlsx".
 
         Returns:
         - None
         """
 
-        self.df = self.read_excel(path)
+        self.df = self.read_csv(path)
         self.path = path
         self.data = data
         self.machines = data.machines
 
-    def read_excel(self, path: str = "queue.xlsx") -> pd.DataFrame:
-        """ Reads an Excel file and loads it into a pandas DataFrame.
+    def read_csv(self, path: str = "queue.xlsx") -> pd.DataFrame:
+        """ Reads an csv file and loads it into a pandas DataFrame.
 
-        This method checks if the specified Excel file exists at the given `path`. If the file exists, 
+        This method checks if the specified csv file exists at the given `path`. If the file exists, 
         it reads the file into a pandas DataFrame, converts the 'fim' and 'inicio' columns to datetime objects, 
         and stores the result in the instance attribute `self.df`. If the file doesn't exist, it resets the DataFrame.
 
         Args:
-        - path (str): The file path of the Excel file to read. Defaults to 'queue.xlsx'.
+        - path (str): The file path of the csv file to read. Defaults to 'queue.xlsx'.
 
         Returns:
-        - pd.DataFrame: The DataFrame containing the data from the Excel file.
+        - pd.DataFrame: The DataFrame containing the data from the csv file.
         """
 
         if os.path.exists(path):
-            self.df = pd.read_excel(path)
+            self.df = pd.read_csv(path)
             self.df['fim'] = self.df['fim'] = pd.to_datetime(self.df['fim'])
             self.df['inicio'] = self.df['inicio'] = pd.to_datetime(self.df['inicio'])
         else:
@@ -99,10 +99,10 @@ class Queue:
         return self.df
 
     def save(self) -> None:
-        """ Saves the current DataFrame to an Excel file.
+        """ Saves the current DataFrame to an csv file.
 
-        This method writes the DataFrame stored in `self.df` to an Excel file at the location specified by `self.path`.
-        The index is not saved in the Excel file.
+        This method writes the DataFrame stored in `self.df` to an csv file at the location specified by `self.path`.
+        The index is not saved in the csv file.
 
         Args:
         - None
@@ -111,13 +111,13 @@ class Queue:
         - None
         """
 
-        self.df.to_excel(self.path, index = False)
+        self.df.to_csv(self.path, index = False)
 
     def reset(self) -> pd.DataFrame:
-        """ Resets the DataFrame to its initial structure and saves it to an Excel file.
+        """ Resets the DataFrame to its initial structure and saves it to an csv file.
 
         This method creates a new empty DataFrame with predefined column names and stores it in the instance attribute `self.df`.
-        The DataFrame is then saved to an Excel file called 'queue.xlsx', with no index included in the file.
+        The DataFrame is then saved to an csv file called 'queue.xlsx', with no index included in the file.
 
         Args:
         - None
@@ -128,14 +128,14 @@ class Queue:
 
         columns = ["ip", "name", "username", "status", "inicio", "fim", "n_cpu", "gpu_name", "gpu_index", "e-mail", "notification_last_day", "notification_fist_day"]
         self.df = pd.DataFrame(columns = columns)
-        self.df.to_excel("queue.xlsx", index=False)
+        self.df.to_csv("queue.xlsx", index=False)
         return self.df
 
     def insert(self, ip: str, name: str, username: str, inicio: str, fim: str, n_cpu: int, gpu_index: int, gpu_name: str, email: str, to_send: bool = True) -> pd.DataFrame:
-        """ Inserts a new entry into the DataFrame and saves it to an Excel file.
+        """ Inserts a new entry into the DataFrame and saves it to an csv file.
 
         This method creates a new entry with the provided information and appends it to the DataFrame (`self.df`). 
-        After adding the new entry, the DataFrame is saved to an Excel file. If `to_send` is `True`, an email notification is sent 
+        After adding the new entry, the DataFrame is saved to an csv file. If `to_send` is `True`, an email notification is sent 
         to the provided email address regarding the new entry.
 
         Args:
@@ -168,7 +168,7 @@ class Queue:
             "notification_fist_day": "N",
         }
         self.df = pd.concat([self.df, pd.DataFrame([new_entry])], ignore_index = True)
-        self.df.to_excel(self.path, index = False)
+        self.df.to_csv(self.path, index = False)
         if to_send: 
             self.__send_mail(
                 subject=f"Seu agendamento foi removido - {new_entry['name']}", 
@@ -183,7 +183,7 @@ class Queue:
         """ Removes an entry from the DataFrame and sends a notification email.
 
         This method removes the entry at the specified index from the DataFrame (`self.df`). After removing the entry, 
-        the updated DataFrame is saved to an Excel file. If `to_send` is `True`, an email notification is sent 
+        the updated DataFrame is saved to an csv file. If `to_send` is `True`, an email notification is sent 
         to the user regarding the removal of the entry.
 
         Args:
@@ -196,7 +196,7 @@ class Queue:
 
         e = self.df.iloc[index]
         self.df = self.df.drop(index=index)
-        self.df.to_excel(self.path, index=False)
+        self.df.to_csv(self.path, index=False)
         if to_send:
             self.__send_mail(
                 subject=f"Seu agendamento foi removido - {e['name']}", 
@@ -215,7 +215,7 @@ class Queue:
         - "Em espera" if the current date and time is before 'inicio'.
         - "Finalizado" if the current date and time is after 'fim'.
         
-        After updating the status, the DataFrame is saved to an Excel file ("queue.xlsx").
+        After updating the status, the DataFrame is saved to an csv file ("queue.xlsx").
 
         Args:
         - None
@@ -229,7 +229,7 @@ class Queue:
                                 "Executando" if row['inicio'] <= data_atual and row['fim'] >= data_atual else 
                                 "Em espera" if row['inicio'] > data_atual else 
                                 "Finalizado", axis=1)
-        self.df.to_excel("queue.xlsx", index=False)
+        self.df.to_csv("queue.xlsx", index=False)
         return self.df
         
     def __last_day(self) -> pd.DataFrame:
@@ -299,7 +299,7 @@ class Queue:
         """ Monitors and sends email notifications for users whose scheduling is starting or ending on the current day.
 
         This method performs the following actions:
-        - Reads the Excel file containing scheduling information.
+        - Reads the csv file containing scheduling information.
         - Updates the status of each entry based on the current date.
         - If `last_day` is True, it checks for entries where the 'fim' (end time) is the current date and sends a notification email to those users who have not been notified yet.
         - If `fist_day` is True, it checks for entries where the 'inicio' (start time) is the current date and sends a notification email to those users who have not been notified yet.
@@ -314,7 +314,7 @@ class Queue:
         - None
         """
 
-        self.read_excel(self.path)
+        self.read_csv(self.path)
         self.update_status()
 
         if last_day: 
