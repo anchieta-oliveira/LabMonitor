@@ -31,7 +31,7 @@ def submit_job() -> None:
     with st.container(border=True):
         st.subheader("Submeter trabalho")
         
-        data_g = Data(); data_g.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
+        data_g = Data(); data_g.read_machines(path=f"{sys.argv[1]}/machines.csv")
 
         with st.expander(f"Máquinas recebendo trabalhos"):
             st.dataframe(queue.data.machines[['name', 'allowed_cpu', 'name_allowed_gpu']],  hide_index=True, use_container_width=True)
@@ -60,6 +60,7 @@ def submit_job() -> None:
                 st.error("Por favor, preencha todos os campos.")
             else:
                 try:
+                    queue.read_csv()
                     queue.submit(username=username,
                                 job_name=job_name,
                                 machine_origin=machine_origin,
@@ -193,7 +194,7 @@ def instru() -> None:
 
 st.sidebar.markdown("# Fila de trabalhos")
 
-data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.xlsx")
+data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.csv")
 queue = QueueJob(data=data)
 
 st.subheader("Fila de trabalhos")
