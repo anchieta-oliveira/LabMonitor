@@ -30,42 +30,42 @@ def run(ip: str, name: str, user: str, pw: str) -> tuple[str, dict]:
     """
 
     try:
-        print(f"Conectando a {ip}...")
+        print(f"Conectando a {ip}...", flush=True)
         results = {}
         c = Connection(ip, user, pw)
         m = Monitor(c)
     except Exception as e:
-        print(f"Erro ao conectar a {ip}: {e}")
+        print(f"Erro ao conectar a {ip}: {e}", flush=True)
         return name, None
 
     try: 
         results.update(m.get_usage_cpu())
     except Exception as e:
         results.update({"cpu_info": {"cpu_usage_percentage": -1}})
-        print(f"Erro ao obter informações de CPU de {ip}: {e}")
+        print(f"Erro ao obter informações de CPU de {ip}: {e}", flush=True)
     try:
         results.update(m.get_usage_gpu())
     except Exception as e:
         results.update({"gpu_info": []})
-        print(f"Erro ao obter informações de GPU de {ip}: {e}")
+        print(f"Erro ao obter informações de GPU de {ip}: {e}", flush=True)
     try:
         results.update(m.get_usage_ram())
     except Exception as e:
         {"ram_info": {"ram_used": -1,"ram_free": -1,"total_ram": -1}}
-        print(f"Erro ao obter informações de RAM de {ip}: {e}")
+        print(f"Erro ao obter informações de RAM de {ip}: {e}", flush=True)
     try:
         results.update(m.get_usage_disk())
     except Exception as e:
-        print(f"Erro ao obter informações de disco de {ip}: {e}")
+        print(f"Erro ao obter informações de disco de {ip}: {e}", flush=True)
 
     return name, results
 
-def save_to_excel(results: dict, filepath: str) -> None:
-    """ Save the results to an Excel file
+def save_to_csv(results: dict, filepath: str) -> None:
+    """ Save the results to an csv file
 
     Args:
     - results (dict): Dictionary with the results of the monitor
-    - filepath (str): Path to the Excel file
+    - filepath (str): Path to the csv file
 
     Returns:
     - None
@@ -97,18 +97,18 @@ def save_to_excel(results: dict, filepath: str) -> None:
     df = pd.DataFrame(data)
 
     if os.path.exists(filepath):
-        existing_data = pd.read_excel(filepath)
+        existing_data = pd.read_csv(filepath)
         df = pd.concat([existing_data, df], ignore_index=True)
 
-    df.to_excel(filepath, index=False)
-    print(f"Dados salvos em {filepath}")
+    df.to_csv(filepath, index=False)
+    print(f"Dados salvos em {filepath}", flush=True)
 
 
 def exec_monitor_history(path: str) -> None:
     """ Execute the monitor history process
 
     Args:
-    - path (str): Path to the Excel file with the machines information
+    - path (str): Path to the csv file with the machines information
 
     Returns:
     - None
@@ -122,7 +122,7 @@ def exec_monitor_history(path: str) -> None:
         names = data.machines['name'].to_list()
         usernames = data.machines['username'].to_list()
         passwords = data.machines['password'].to_list()
-        print(data.machines)
+        print(data.machines, flush=True)
 
         results = {}
         history_file = f"{path}/history.xlsx"
@@ -137,5 +137,5 @@ def exec_monitor_history(path: str) -> None:
                 if stats:
                     results[name] = stats
 
-        save_to_excel(results, history_file)
+        save_to_csv(results, history_file)
         time.sleep(3600) 
