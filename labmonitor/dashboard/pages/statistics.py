@@ -15,7 +15,7 @@ st.markdown("# Estatística de uso das máquinas.")
 st.sidebar.markdown("# Estatística de uso das máquinas.")
 
 try:
-    df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../history.xlsx")
+    df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../history.csv")
 except Exception as e:
     st.error(f"Não foi possível carregar as informações de histórico de uso das máquinas. {e}")
 

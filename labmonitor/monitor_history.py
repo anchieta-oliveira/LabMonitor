@@ -116,7 +116,7 @@ def exec_monitor_history(path: str) -> None:
 
     while True:
         data = Data()
-        data.read_machines(path=f"{os.path.dirname(os.path.abspath(__file__))}/../machines.xlsx")
+        data.read_machines(path=f"{os.path.dirname(os.path.abspath(__file__))}/../machines.csv")
 
         ips = data.machines['ip'].to_list()
         names = data.machines['name'].to_list()
@@ -125,7 +125,7 @@ def exec_monitor_history(path: str) -> None:
         print(data.machines, flush=True)
 
         results = {}
-        history_file = f"{path}/history.xlsx"
+        history_file = f"{path}/history.csv"
 
         with ThreadPoolExecutor(max_workers=len(ips)) as executor:
             futures = [

@@ -153,7 +153,7 @@ def lista_espera() -> None:
 st.markdown("# Agendamento de Máquinas")
 st.sidebar.markdown("# Agendamento de Máquinas")
 
-data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.xlsx")
+data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.csv")
 queue = Queue(data=data)
 
 try:
