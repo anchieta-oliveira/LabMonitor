@@ -11,13 +11,13 @@ import plotly.graph_objects as go
 
 # Main
 
-st.markdown("# Estatística de uso das máquinas.")
-st.sidebar.markdown("# Estatística de uso das máquinas.")
+st.markdown("# Machine usage statistics.")
+st.sidebar.markdown("# Machine usage statistics.")
 
 try:
     df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../history.csv")
 except Exception as e:
-    st.error(f"Não foi possível carregar as informações de histórico de uso das máquinas. {e}")
+    st.error(f"It was not possible to load the machines' usage history information. {e}")
 
 def cpu_use() -> None:
     """ Show the CPU usage of the machines
@@ -29,7 +29,7 @@ def cpu_use() -> None:
     - None
     """
 
-    st.subheader("Uso de CPU (H) por máquina")
+    st.subheader("CPU usage (H) per machine")
     maquinas = df['Name'].unique()
     cpu_time = [((df[df['Name'] == m]['CPU Usage (%)']/100)).sum() for m in maquinas]
     df_cpu_use = pd.DataFrame({"Name": maquinas, "CPU Usage (H)": cpu_time})
@@ -52,7 +52,7 @@ def gpu_use() -> None:
     - None
     """
 
-    st.subheader("Uso de GPU (H)")
+    st.subheader("GPU usage (H)")
     maquinas = df['Name'].unique()
     df_maquinas_gpu = [{m: (df[df['Name'] == m].loc[:, df.columns.str.contains(r"gpu.*utilization|gpu_.*_name", case=False, regex=True)].dropna(axis=1, how='all'))} for m in maquinas]
     r = []
