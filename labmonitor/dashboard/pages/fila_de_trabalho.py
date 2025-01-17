@@ -104,7 +104,7 @@ def acompanhar() -> None:
         st.subheader("Acompanhar trabalho")
         
         try:
-            trabalhos = queue.df[queue.df['status'] == 'executando'].apply(
+            trabalhos = queue.df[queue.df['status'] == 'running'].apply(
                                         lambda row: f"{row['name']} -  {row['username']} - {row['job_name']} - {row['submit']}",
                                         axis=1).tolist()
         except Exception as e:
