@@ -27,6 +27,7 @@ parser.add_argument('-s', '--start', action='store_true', help='Start Dashbord.'
 parser.add_argument('-sh', '--histoy', action='store_true', help='Save machine history.')
 parser.add_argument('-sq', '--queue', action='store_true', help='Monitor queue.')
 parser.add_argument('-sqj', '--queue_job', action='store_true', help='Monitor the job queue.')
+parser.add_argument('-ph','--path_history', default=os.path.dirname(os.path.abspath(__file__)), help='Arquivo de configurações.')
 
 # Execute the parse_args() method
 args = parser.parse_args()
