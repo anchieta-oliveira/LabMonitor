@@ -1,2 +1,2 @@
 ip,name,username,job_name,status,pid,path_exc,path_origin,machine_origin,script_name,submit,inicio,fim,n_cpu,taskset,gpu_requested,gpu_name,gpu_index,e-mail,notification_start,notification_end
-,,,,,,,,,,,,,,,,,,,,
+
