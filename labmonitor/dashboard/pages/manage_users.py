@@ -116,7 +116,7 @@ def addsudo():
 st.markdown("# Gerenciar usuários")
 st.sidebar.markdown("# Gerenciar usuários.")
 
-df = pd.read_excel(f"{os.path.dirname(os.path.abspath(__file__))}/../../../machines.xlsx")
+df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../machines.csv")
 
 maquina_selecionada = st.selectbox('Escolha a máquina', df['name'])
 df_filtrado = df[df['name'] == maquina_selecionada].dropna(axis=1, how='all')
