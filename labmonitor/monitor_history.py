@@ -136,6 +136,9 @@ def exec_monitor_history(path: str) -> None:
                 name, stats = future.result()
                 if stats:
                     results[name] = stats
-
-        save_to_csv(results, history_file)
+        try:
+            save_to_csv(results, history_file)
+        except Exception as e:
+            print(e, flush=True)
+            
         time.sleep(3600) 
