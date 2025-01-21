@@ -1,11 +1,11 @@
 ---
-title: 'LabMonitor: Simplified management of decentralized computational resources of Linux machines'
+title: 'LabMonitor: Simplified solution for managing and monitoring computing resources in research laboratories'
 tags:
-  - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  - Automation
+  - Configuration
+  - Real-time
+  - Queue Job
+  - Linux
 authors:
   - name: José de Anchieta de Oliveira Filho
     orcid: 0000-0002-1904-3786
