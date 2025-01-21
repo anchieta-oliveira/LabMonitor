@@ -1148,10 +1148,18 @@ with open("labmonitor.status", "w") as log:
                   "": self.__nenhum
                   }
         
-        self.data.read_users()
-        self.read_csv()
-        self.update_status_machines()
-        self.update_status_jobs()
+        try: self.data.read_users()
+        except Exception as e: print(f"Error updating user limits: {e}", flush=True)
+
+        try: self.read_csv()
+        except Exception as e: print(f"Error updating data jobs:", flush=True)
+
+        try: self.update_status_machines()
+        except Exception as e: print(f"Error updating status_machines: {e}",  flush=True)
+        
+        try: self.update_status_jobs()
+        except Exception as e: print(f"Error updating jobs: {e}",  flush=True)
+
         print(self.df, flush=True)
         
         for i, row in self.df.iterrows():
