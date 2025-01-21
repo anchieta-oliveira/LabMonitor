@@ -81,6 +81,12 @@ class Data:
             
         except Exception as e:
             print("Error saving the file:", e, flush=True)
+            try:
+                if os.path.exists(path): os.rename(path, backup_path)
+                self.machines.to_csv(path, index=False)
+            except Exception as e:
+                print("Error saving the file 2:", e, flush=True)
+
 
     def read_users(self, path: str = f"{current_dirname_path}/../users.csv") -> pd.DataFrame:
         """ Read the users information from an csv file
