@@ -19,7 +19,8 @@ setup(
         "pandas>=1.1.3",
         "streamlit>=1.41.1",
         "sphinx>=8.1.3",
-        "plotly>=5.24.1"
+        "plotly>=5.24.1",
+        "paramiko"
     ],
     classifiers=[
         "Intended Audience :: Developers",
