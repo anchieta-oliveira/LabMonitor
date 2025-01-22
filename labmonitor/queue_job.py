@@ -20,9 +20,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Class
 ############################################################################################################
-
-
-
 class QueueJob:
     """ QueueJob class for managing job queue information and interacting with machine configurations.
 
@@ -633,7 +630,7 @@ with open("labmonitor.status", "w") as log:
             ch = con.ssh.get_transport().open_session()
             ch.exec_command(f"cd {path_exc} && nohup python3 run_labmonitor.py >  run_labmonitor.log &")
 
-            time.sleep(0.1)
+            time.sleep(1)
             _, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split("-")
 
             ch.close()
