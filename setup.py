@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup(
-    name="LabMonitor",
+    name="labmonitor",
     version="0.0.1",
     description="LabMonitor, a Python application designed to simplify the management of computing resources in decentralized networks of Linux machines.",
     long_description=readme(),
