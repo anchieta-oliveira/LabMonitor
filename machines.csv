@@ -1,1 +1,2 @@
 ip,name,username,password,OBS
+8.8.8.8,machine_unique_name,system_user,system_user_password,none
