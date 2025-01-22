@@ -25,8 +25,7 @@ python3.12 main.py -s
 DOCUMENTATION
 -------------
 
-To build documentation, go to the root of the project and run
-
+To build documentation, go to the root of the project (labmonitor/docs/)and run
 ```sh
 make html
 ```
