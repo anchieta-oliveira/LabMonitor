@@ -88,7 +88,6 @@ class QueueJob:
                     print(f"Backup file {backup_path} uploaded successfully.", flush=True)
                 except Exception as e_backup:
                     print(f"Error reading the backup file{backup_path}: {e_backup}", flush=True)
-                    self.reset()
         else:
             self.reset()
 
