@@ -86,8 +86,36 @@ def remove_job() -> None:
     Returns:
     - None
     """
+    global queue
+    with st.container(border=True):
+        st.subheader("Cancel Job")
+        try:
+            jobs = queue.df[queue.df['status'] != 'finished'].apply(
+                                        lambda row: f"{row['job_name']} - {row['username']} - {row['submit']} - {row['name']}",
+                                        axis=1).tolist()
+        except Exception as e:
+            jobs = []
 
-    pass
+        job = st.selectbox('Select Job', jobs)
+        
+        email = st.text_input("E-mail")
+        remove = st.button("Cancel job")
+
+        if remove:
+            job_name, username, date_submit, machine_name = job.split(' - ')
+
+            index_remove = queue.df[(queue.df['job_name'] == job_name.strip()) & (queue.df['username'] == username.strip()) & (queue.df['submit'] == pd.to_datetime(date_submit.strip())) & (queue.df['name'] == machine_name.strip())].index[0]
+            if not email:
+                st.error("Please fill in all the fields.")
+            elif email == queue.df.iloc[index_remove]['e-mail']:
+                try:
+                    queue.remove(index=index_remove)
+                    st.success(f"Job successfully canceled/removed.")
+                except Exception as e:
+                    st.error(f"Error when removing/canceling: {e}")
+            elif email != queue.df.iloc[index_remove]['e-mail']:
+                st.error(f"E-mail does not correspond to job.")
+
 
 def acompanhar() -> None:
     """ Track a job in the queue
