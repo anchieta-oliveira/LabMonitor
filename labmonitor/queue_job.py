@@ -178,7 +178,21 @@ class QueueJob:
         self.df = pd.concat([self.df, pd.DataFrame([new_job])], ignore_index = True)
         self.save()
         print(self.df, flush=True)
-    
+
+    def remove(self, index:int) -> None:
+        row = self.df.loc[index]
+        row_machine = self.data.machines[self.data.machines['name'] == row['name']].iloc[0]
+
+        try:
+            if row['status'] == "running":
+                con = Connection(ip=row_machine['ip'], username=row_machine['username'], password=row_machine['password'])
+                con.execute_ssh_command(f"echo '{row_machine['password']}' | sudo -S sh -c 'pgid=$(ps -o pgid= -p {row['pid']}); kill -TERM -$pgid'")
+            self.df = self.df.loc[index, 'status'] = 'canceled'
+            self.save()
+
+        except Exception as e:
+            print(f"Error when canceling/removing job {row['job_name']} - {row['name']}: {e}")
+
     def update_gpu(self) -> None:
         """ Updates the GPU information for each machine listed in the 'machines' DataFrame.
 
@@ -1044,6 +1058,9 @@ with open("labmonitor.status", "w") as log:
         send()
         self.df.loc[index, ['fim']] = datetime.now()
         self.save()
+
+    def __canceled(self, index) -> None:
+        pass
 
 
     def __not_finished_correctly(self, index: int) -> None:
