@@ -169,6 +169,7 @@ class QueueJob:
             "path_origin": path_origin,
             "n_cpu": n_cpu,
             "e-mail": email,
+            "status": "pending",
             "gpu_requested": ",".join(gpus),
             "submit": datetime.now(),
             "notification_start": "N",
