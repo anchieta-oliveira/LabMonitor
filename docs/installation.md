@@ -18,11 +18,17 @@ git clone https://github.com/anchieta-oliveira/LabMonitor.git
 cd LabMonitor
 ```
 
-### Step 1.1: Clone the Repository
+### Step 1.1: Conda Environment
 Create a new Conda environment using the provided requirements.txt file:
 ```bash
 conda create --name labmonitor --file requirements.txt
 conda activate labmonitor
+```
+
+### Step 1.2: Then Install the Package
+Install the package in editable mode (useful for development purposes):
+```bash
+python -m pip install -e .
 ```
 
 ### Start LabMonitor:
