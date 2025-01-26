@@ -96,12 +96,16 @@ def save_to_csv(results: dict, filepath: str) -> None:
 
     df = pd.DataFrame(data)
 
-    if os.path.exists(filepath):
-        existing_data = pd.read_csv(filepath)
-        df = pd.concat([existing_data, df], ignore_index=True)
-
-    df.to_csv(filepath, index=False)
-    print(f"Dados salvos em {filepath}", flush=True)
+    try:
+        if os.path.exists(filepath):
+            existing_data = pd.read_csv(filepath)
+            
+            df = pd.concat([existing_data, df], ignore_index=True)
+        
+        df.to_csv(filepath, index=False)
+        print(f"Dados salvos em {filepath}", flush=True)
+    except Exception as e:
+        print(f"Erro ao salvar os dados: {e}", flush=True)
 
 
 def exec_monitor_history(path: str) -> None:
