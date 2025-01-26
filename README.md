@@ -22,6 +22,13 @@ LabMonitor permite: 
 python3.12 main.py -s
 ```
 
+INSTALLATION
+-------------
+
+For detailed instructions on how to set up and install the project, refer to the installation guide at the link below:
+[Installation](docs/installation.md)
+
+
 DOCUMENTATION
 -------------
 
