@@ -113,8 +113,17 @@ def addsudo():
 # Main
 ############################################################################################################
 
-st.markdown("# Manage Users")
-st.sidebar.markdown("# Manage Users")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h1>Manage Users</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.markdown("# Description")
+st.sidebar.markdown("This section lists users of the machines listed in the \"machines.csv\" and the groups they belong to, shows which ones are currently online, and allows actions such as creating and deleting users.")
+st.sidebar.markdown("Note that in order to create and delete users in a specific computer you must include one of its sudo users in the \"machines.csv\" file")
 
 df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../machines.csv")
 
@@ -161,3 +170,5 @@ try:
     fun[action]()
 except Exception as e:
     st.error(f"Error selecting action: {e}")
+
+#    

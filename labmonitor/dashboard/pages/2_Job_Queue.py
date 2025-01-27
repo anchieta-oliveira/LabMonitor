@@ -203,29 +203,39 @@ def instru() -> None:
     """
 
     txt = """
-    1 - Verifique os programas disponíveis e como chamá-los nos scripts de uso.
-    2 - Sempre o index da GPU será "0", designe este para aplicação, caso necessário.
-    3 - Verifique a funcionalidade dos script (.sh). Caso ele falhe, a fila continuará normalmente, você terá que alocar novamente a fila.
-    4 - Ao finalizar o trabalho (com sucesso ou falha) os arquivos serão copiados automaticamente para a máquina de origem, no mesmo diretório. Não altere o local do diretório na máquina de origem até o trabalho ser finalizado. Garanta que tenha espaço para receber os resultados. 
-    5 - Você será notificado por e-mail ao finalizar o trabalho (com sucesso ou falha).
-    6 - Caso seu trabalho falhe, verifique os resultados, corrija e submeta novamente à fila.
-    7 - Não é possível direcionar especificamente a máquina que receberá o trabalho, mas pode-se selecionar o recurso, por exemplo, uma ou mais GPUs específicas.
-    8- Sempre coloque o mesmo nome de usuário.
+    1 - Check the available programs and how to call them in the usage scripts. 
+    2 - The GPU index will always be "0", assign this one for the application if necessary. 
+    3 - Check the functionality of the scripts (sh). If they fail, the queue will continue normally, but you will have to allocate the queue again. 
+    4 - Upon completing the task (whethersuccessful or failed), the files will be automatically copied to thesource machine in the same directory. Do not change the directorylocation on the source machine until the task is completed. Ensurethere is enough space to receive the results. 
+    5 - You will be notifiedby email upon task completion (whether successful or failed). 
+    6 - If your task fails, check the results, correct them, and submit it againto the queue. 
+    7 - It is not possible to specifically direct which machine will receive the task, but you can select the resource, such as one or more specific GPUs. 
+    8 - Always use the same username. 
     """
 
-    with st.expander(f"Instruções de uso"):
+    with st.expander(f"Usage Instructions"):
         st.text(txt)
 
 
 # Main
 ############################################################################################################
 
-st.sidebar.markdown("# Job Queue")
+st.sidebar.markdown("# Description")
+st.sidebar.markdown("This section is used to submit and monitor the execution of tasks. It includes tasks that are pending, completed, or currently being executed.")
+st.sidebar.markdown("This section captures data from the \"machines_job.csv\" file, ensuring that only the machines listed are available for task execution.")
+st.sidebar.markdown("If \"email.json\" is configured, you will receive task status update emails, including job start and completion.")
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.csv")
 queue = QueueJob(data=data)
 
-st.subheader("Job Queue")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h1>Job Queue</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 st.dataframe(queue.df[queue.df['status'] != 'finished'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_requested', 'gpu_name']], use_container_width=True, hide_index=True)
 
 def nenhum() -> None:
@@ -252,3 +262,12 @@ except Exception as e:
     st.error(f"Erro ao selecionar ação: {e}")
 
 instru()
+
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h1 style="font-size: 14px;">The data displayed in this section is updated every 5 minutes.</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
