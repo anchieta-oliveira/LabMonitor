@@ -28,20 +28,20 @@ def agendar() -> None:
 
     global queue
     with st.container(border=True):
-        st.subheader("Novo Agendamento")
-        maquina_selecionada = st.selectbox('Escolha a máquina', data.machines['name'])
+        st.subheader("New Schedule")
+        maquina_selecionada = st.selectbox('Choose a machine', data.machines['name'])
         maquina = data.machines.loc[data.machines["name"] == maquina_selecionada]
 
-        lista_espera_maquina = queue.df[queue.df['name'] == maquina_selecionada][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day'])
+        lista_espera_maquina = queue.df[queue.df['name'] == maquina_selecionada][queue.df['status'] == "Waiting"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day'])
         if lista_espera_maquina.size > 0:
-            with st.expander(f"Lista de espera para {maquina_selecionada}"):
+            with st.expander(f"Waiting list for {maquina_selecionada}"):
                 st.dataframe(lista_espera_maquina,  hide_index=True, use_container_width=True)
 
-        n_cpu = st.number_input("Número de CPUs", min_value=1, step=1)
+        n_cpu = st.number_input("Number of CPUs", min_value=1, step=1)
         try:
             con = Connection(ip=maquina['ip'].iloc[0], username=maquina['username'].iloc[0], password=maquina['password'].iloc[0])
             mon = Monitor(con)
-            gpu = st.selectbox('Selecione a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
+            gpu = st.selectbox('Select a GPU', ["-1 - Null"]+[f"{gpu['gpu_index']} - {gpu['name']}" for gpu in mon.get_usage_gpu()['gpu_info']])
             gpu_index, gpu_name = gpu.split(" - ")
         
         except Exception as e:
@@ -49,13 +49,13 @@ def agendar() -> None:
             gpu_index, gpu_name = gpu.split(" - ")
             st.error(f"Erro ao obeter informações de GPU. Provavelmente {maquina_selecionada} não tem GPU, está offline ou com falha.")
 
-        min_data = pd.to_datetime(queue.df.loc[(queue.df['name'] == maquina_selecionada) & (queue.df['gpu_name'] == gpu_name.strip()) & (queue.df['gpu_index'] == int(gpu_index)), 'fim'].max())
+        min_data = pd.to_datetime(queue.df.loc[(queue.df['name'] == maquina_selecionada) & (queue.df['gpu_name'] == gpu_name.strip()) & (queue.df['gpu_index'] == int(gpu_index)), 'end'].max())
         if str(min_data) == "NaT": min_data = datetime.now()
 
-        inicio = st.date_input("Início (Data)", min_value=min_data)
-        #inicio_hora = st.time_input("Início (Hora)", value=datetime.now().time())
-        fim = st.date_input("Fim (Data)", value=min_data, min_value=min_data)
-        #fim_hora = st.time_input("Fim (Hora)", value=datetime.now().time())
+        start = st.date_input("Start (Date)", min_value=min_data)
+        #start_hora = st.time_input("Início (Hora)", value=datetime.now().time())
+        end = st.date_input("End (Date)", value=min_data, min_value=min_data)
+        #end_hora = st.time_input("end (Hora)", value=datetime.now().time())
 
         username = st.text_input("Username")
         email = st.text_input("E-mail")
@@ -64,18 +64,18 @@ def agendar() -> None:
         if submitted:
             if not username or not n_cpu or not email:
                 st.error("Por favor, preencha todos os campos.")
-            elif min_data >= pd.to_datetime(inicio) and min_data >= pd.to_datetime(fim):
+            elif min_data >= pd.to_datetime(start) and min_data >= pd.to_datetime(end):
                 st.error("Por favor, indique uma data livre para o recurso desejado (GPU ou CPU).")
             else:
                 try:
-                    inicio_datetime = datetime.combine(inicio, datetime.now().time())
-                    fim_datetime = datetime.combine(fim, time(23, 59, 0, 0))
+                    start_datetime = datetime.combine(start, datetime.now().time())
+                    end_datetime = datetime.combine(end, time(23, 59, 0, 0))
                     queue.insert(
                         ip=maquina['ip'].iloc[0],
                         name=maquina['name'].iloc[0],
                         username=username,
-                        inicio=inicio_datetime,
-                        fim=fim_datetime,
+                        start=start_datetime,
+                        end=end_datetime,
                         n_cpu=n_cpu,
                         gpu_index=gpu_index,
                         gpu_name=gpu_name,
@@ -99,23 +99,23 @@ def remover_agendamento() -> None:
 
     global queue
     with st.container(border=True):
-        st.subheader("Remover Agendamento")
+        st.subheader("Remove Schedule")
         try:
-            agendamentos = queue.df[queue.df['status'] != 'Finalizado'].apply(
-                                        lambda row: f"{row['name']} - {row['username']} - {row['inicio']} - {row['fim']} - {row['n_cpu']} - {row['gpu_name']}",
+            agendamentos = queue.df[queue.df['status'] != 'Finished'].apply(
+                                        lambda row: f"{row['name']} - {row['username']} - {row['start']} - {row['end']} - {row['n_cpu']} - {row['gpu_name']}",
                                         axis=1).tolist()
         except Exception as e:
             agendamentos = []
 
-        agendamento = st.selectbox('Escolha usuário', agendamentos)
+        agendamento = st.selectbox('Select user', agendamentos)
         
         email = st.text_input("E-mail")
-        remove = st.button("Remover")
+        remove = st.button("Remove")
 
         if remove:
-            nome_maquina, usuario, inicio, fim, n_cpu, gpu_name = agendamento.split(' - ')
+            nome_maquina, usuario, start, end, n_cpu, gpu_name = agendamento.split(' - ')
 
-            index_remove = queue.df[(queue.df['name'] == nome_maquina) & (queue.df['username'] == usuario) & (queue.df['inicio'] == inicio) & (queue.df['fim'] == fim)].index[0]
+            index_remove = queue.df[(queue.df['name'] == nome_maquina) & (queue.df['username'] == usuario) & (queue.df['start'] == start) & (queue.df['end'] == end)].index[0]
             if not email:
                 st.error("Por favor, preencha todos os campos.")
             elif email == queue.df.iloc[index_remove]['e-mail']:
@@ -139,19 +139,29 @@ def lista_espera() -> None:
 
     global queue
     with st.container(border=True):
-        st.subheader("Lista de espera")
-        maquinas_espera = queue.df[queue.df['status'] == "Em espera"]['name'].unique()
+        st.subheader("Waiting list")
+        maquinas_espera = queue.df[queue.df['status'] == "Waiting"]['name'].unique()
         print(maquinas_espera)
         for m in maquinas_espera:
             with st.expander(m):
-                st.dataframe(queue.df[queue.df['name'] == m][queue.df['status'] == "Em espera"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day']),  hide_index=True, use_container_width=True)
+                st.dataframe(queue.df[queue.df['name'] == m][queue.df['status'] == "Waiting"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day']),  hide_index=True, use_container_width=True)
 
 
 # Main
 ############################################################################################################
 
-st.markdown("# Agendamento de Máquinas")
-st.sidebar.markdown("# Agendamento de Máquinas")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h1>Machine Scheduling</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.markdown("# Description")
+st.sidebar.markdown("This section enables the logistical management of machines, allowing users to schedule and check their availability.")
+st.sidebar.markdown("Information displayed here is captured and stored in \"queue.csv\" file.")
+st.sidebar.markdown("If \"email.json\" is configured, you will receive emails with reminders, including the arrival of the scheduled time and the end of the scheduled time.")
 
 data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines.csv")
 queue = Queue(data=data)
@@ -159,7 +169,7 @@ queue = Queue(data=data)
 try:
     queue.update_status()
 except:
-    st.warning("Não foi possivel atualizar o status dos agendamentos.")
+    st.warning("Failed to update schedule status.")
     pass
 
 def monitor_now() -> None:
@@ -172,13 +182,13 @@ def monitor_now() -> None:
     - None
     """
 
-    try:
+    try:            
         queue.monitor(now=True)
     except Exception as e:
         st.warning(f"{e}")
 
 
-st.subheader("Agendamentos")
+st.subheader("Schedules")
 st.dataframe(queue.df[queue.df['status'] == "Executando"].drop(columns=['ip', 'e-mail', 'notification_last_day', 'notification_fist_day']), use_container_width=True, hide_index=True)
 
 def nenhum() -> None:
@@ -193,8 +203,8 @@ def nenhum() -> None:
     
     pass
 
-action = st.selectbox("Escolha uma ação", ["Selecione", "Agendar", "Remover Agendamento", "Lista de Espera"])
-fun = {"Selecione": nenhum, "Agendar": agendar, "Remover Agendamento": remover_agendamento, "Lista de Espera": lista_espera}
+action = st.selectbox("Select an action", ["Select", "Schedule", "Remove Schedule", "Waiting List"])
+fun = {"Select": nenhum, "Schedule": agendar, "Remove Schedule": remover_agendamento, "Waiting List": lista_espera}
 
 if "action_state" not in st.session_state: 
     st.session_state.action_state = action
@@ -203,5 +213,4 @@ try:
     fun[action]()
 except Exception as e:
     st.error(f"Erro ao selecionar ação: {e}")
-
 

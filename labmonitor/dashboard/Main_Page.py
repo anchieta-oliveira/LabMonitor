@@ -127,11 +127,30 @@ disk_data = pd.DataFrame(disk_data)
 
 # Exibir as tabelas no Streamlit
 
-st.markdown("# Real Time")
-st.sidebar.markdown("# Real Time")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h1>Real Time Info</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.markdown("# Description")
+st.sidebar.markdown("This section provides hardware information about the machines listed in the \"machines.csv\" file.")
 st.subheader("CPU and RAM")
 st.dataframe(cpu_ram_df.sort_values(by='CPU Usage (%)', ascending=False), use_container_width=True, hide_index=True)
 st.subheader("GPUs")
 st.dataframe(gpu_df.sort_values(by='ID', ascending=False), use_container_width=True, hide_index=True)
 st.subheader("Disks")
 st.dataframe(disk_data, use_container_width=True, hide_index=True)
+
+#
+st.markdown("")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h1 style="font-size: 14px;">To update the information, please refresh the page.</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
