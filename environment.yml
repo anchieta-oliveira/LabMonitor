@@ -1,4 +1,4 @@
-name: LabMonitor
+name: labmonitor
 channels:
   - conda-forge
   - defaults
