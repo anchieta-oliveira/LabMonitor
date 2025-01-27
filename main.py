@@ -23,10 +23,10 @@ parser = ap.ArgumentParser(description='LabMonitor, a Python application designe
 
 # Add the arguments
 parser.add_argument('-f','--file', help='Settings file.')
-parser.add_argument('-s', '--start', action='store_true', help='Start Dashbord.')
-parser.add_argument('-sh', '--histoy', action='store_true', help='Save machine history.')
-parser.add_argument('-sq', '--queue', action='store_true', help='Monitor queue.')
-parser.add_argument('-sqj', '--queue_job', action='store_true', help='Monitor the job queue.')
+parser.add_argument('-s', '--start', action='store_true', help='Start dashbord.')
+parser.add_argument('-sh', '--histoy', action='store_true', help='Save machines hardware usage history.')
+parser.add_argument('-sq', '--queue', action='store_true', help='Manage schedule.')
+parser.add_argument('-sqj', '--queue_job', action='store_true', help='Manage the job queue.')
 parser.add_argument('-ph','--path_history', default=os.path.dirname(os.path.abspath(__file__)), help='Arquivo de configurações.')
 
 # Execute the parse_args() method
@@ -78,7 +78,7 @@ if args.start:
         script_path =  os.path.dirname(os.path.abspath(sys.argv[0]))
 
         # Start the streamlit
-        os.system(f"streamlit run {script_path}/labmonitor/dashboard/main_page.py {script_path}")
+        os.system(f"streamlit run {script_path}/labmonitor/dashboard/Main_Page.py {script_path}")
         print("Streamlit started.")
     except Exception as e:
         print(f"Error starting Streamlit: {e}")
