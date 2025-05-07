@@ -65,8 +65,9 @@ if args.queue_job:
     data = Data()
 
     #Set the path of the machines csv file
-    data.path_machines = "machines_job.csv"
-    data.read_machines("machines_job.csv")
+    data.path_data = f"{os.path.dirname(os.path.abspath(__file__))}/database.db"
+    data.read_machines(f"{os.path.dirname(os.path.abspath(__file__))}/database.db")
+    data.read_machines_job(f"{os.path.dirname(os.path.abspath(__file__))}/database.db")
     q = QueueJob(data=data)
     pq = multiprocessing.Process(target=q.monitor)
     pq.start()
