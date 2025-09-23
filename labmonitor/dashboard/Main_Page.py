@@ -63,7 +63,9 @@ def run(ip: str, name: str, user: str, pw: str) -> tuple[str, dict]:
 # Main
 ############################################################################################################
 
-data = Data(); data.read_machines(path=f"{sys.argv[1]}/database.db")
+data = Data(); 
+data.connect_data(path=f"{sys.argv[1]}/database.db")
+data.read_machines()
 
 ips = data.machines['ip'].to_list()
 names = data.machines['name'].to_list()

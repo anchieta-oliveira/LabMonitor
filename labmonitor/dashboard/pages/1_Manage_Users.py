@@ -4,7 +4,9 @@
 ############################################################################################################
 import os
 import subprocess
+import sys
 import pandas as pd
+from labmonitor.data import Data
 import streamlit as st
 
 from labmonitor.monitor import Monitor
@@ -124,13 +126,16 @@ st.markdown(
 st.sidebar.markdown("# Description")
 st.sidebar.markdown("This section lists users of the machines listed in the \"machines.csv\" and the groups they belong to, shows which ones are currently online, and allows actions such as creating and deleting users.")
 st.sidebar.markdown("Note that in order to create and delete users in a specific computer you must include one of its sudo users in the \"machines.csv\" file")
+df = Data()
+df.connect_data(path=f"{sys.argv[1]}/database.db")
+df = df.read_machines()
 
-df = pd.read_csv(f"{os.path.dirname(os.path.abspath(__file__))}/../../../machines.csv")
 
 maquina_selecionada = st.selectbox('Choose a machine', df['name'])
 df_filtrado = df[df['name'] == maquina_selecionada].dropna(axis=1, how='all')
 c = Connection(df_filtrado['ip'].iloc[0], df_filtrado['username'].iloc[0], df_filtrado['password'].iloc[0])
 m = Monitor(c)
+
 
 def run_get_user() -> None:
     """ Get the users from the machine

@@ -28,25 +28,26 @@ def submit_job() -> None:
     """
 
     global queue
+    global data
     with st.container(border=True):
         st.subheader("Submit job")
         
-        data_g = Data(); data_g.read_machines(path=f"{sys.argv[1]}/machines.csv")
+        data.read_machines()
 
         with st.expander(f"Machines receiving jobs"):
-            st.dataframe(queue.data.machines[['name', 'allowed_cpu', 'name_allowed_gpu']],  hide_index=True, use_container_width=True)
+            st.dataframe(queue.data.machines_job[['name', 'allowed_cpu', 'name_allowed_gpu']],  hide_index=True, use_container_width=True)
         
 
         n_cpu = st.number_input("Number of CPUs", min_value=1, step=1)
 
         gpus = ["all"]
         selected_gpus = []
-        for i in queue.data.machines['name_allowed_gpu']:
+        for i in queue.data.machines_job['name_allowed_gpu']:
             gpus.extend(i.split(","))
 
         selected_gpus = st.multiselect("Select the required GPUs", list(set(gpus)))
                 
-        machine_origin = st.selectbox('Source machine', data_g.machines['name'])
+        machine_origin = st.selectbox('Source machine', data.machines['name'])
         path_origin = st.text_input("Directory with working files (source machine)")
         script_name = st.text_input("Script name (.sh)")
         job_name = st.text_input("Job name")
@@ -60,7 +61,7 @@ def submit_job() -> None:
                 st.error("Please fill in all the fields.")
             else:
                 try:
-                    queue.read_csv()
+                    queue.read()
                     queue.submit(username=username,
                                 job_name=job_name,
                                 machine_origin=machine_origin,
@@ -90,7 +91,7 @@ def remove_job() -> None:
     with st.container(border=True):
         st.subheader("Cancel Job")
         try:
-            jobs = queue.df[queue.df['status'] != 'finished'].apply(
+            jobs = queue.df[~queue.df['status'].isin(['finished', 'canceled'])].apply(
                                         lambda row: f"{row['job_name']} - {row['username']} - {row['submit']} - {row['name']}",
                                         axis=1).tolist()
         except Exception as e:
@@ -104,7 +105,8 @@ def remove_job() -> None:
         if remove:
             job_name, username, date_submit, machine_name = job.split(' - ')
 
-            index_remove = queue.df[(queue.df['job_name'] == job_name.strip()) & (queue.df['username'] == username.strip()) & (queue.df['submit'] == pd.to_datetime(date_submit.strip())) & (queue.df['name'] == machine_name.strip())].index[0]
+            index_remove = queue.df[(queue.df['job_name'] == job_name.strip()) & (queue.df['username'] == username.strip()) & (queue.df['submit'] == pd.to_datetime(date_submit.strip())) ].index[0]
+            print(index_remove)
             if not email:
                 st.error("Please fill in all the fields.")
             elif email == queue.df.iloc[index_remove]['e-mail']:
@@ -215,6 +217,7 @@ def instru() -> None:
 
     with st.expander(f"Usage Instructions"):
         st.text(txt)
+        st.video("https://youtu.be/AphZVXC7QTQ")
 
 
 # Main
@@ -225,8 +228,11 @@ st.sidebar.markdown("This section is used to submit and monitor the execution of
 st.sidebar.markdown("This section captures data from the \"machines_job.csv\" file, ensuring that only the machines listed are available for task execution.")
 st.sidebar.markdown("If \"email.json\" is configured, you will receive task status update emails, including job start and completion.")
 
-data = Data(); data.read_machines(path=f"{sys.argv[1]}/machines_job.csv")
-queue = QueueJob(data=data)
+data = Data()
+data.connect_data(path=f"{sys.argv[1]}/database.db")
+data.read_machines_job()
+data.read_machines()
+queue = QueueJob(data=data, path=f"{sys.argv[1]}/database.db")
 
 st.markdown(
     """
@@ -236,7 +242,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-st.dataframe(queue.df[queue.df['status'] != 'finished'][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_requested', 'gpu_name']], use_container_width=True, hide_index=True)
+st.dataframe(queue.df[~queue.df['status'].isin(['finished', 'canceled'])][['name', 'username', 'job_name','status', 'submit', 'n_cpu', 'gpu_requested', 'gpu_name']], use_container_width=True, hide_index=True)
 
 def nenhum() -> None:
     """ Do nothing 

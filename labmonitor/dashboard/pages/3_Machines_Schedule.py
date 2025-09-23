@@ -163,7 +163,9 @@ st.sidebar.markdown("This section enables the logistical management of machines,
 st.sidebar.markdown("Information displayed here is captured and stored in \"queue.csv\" file.")
 st.sidebar.markdown("If \"email.json\" is configured, you will receive emails with reminders, including the arrival of the scheduled time and the end of the scheduled time.")
 
-data = Data(); data.read_machines(path=f"{sys.argv[1]}/database.db")
+data = Data(); 
+data.connect_data(path=f"{sys.argv[1]}/database.db")
+data.read_machines()
 queue = Queue(data=data)
 
 try:

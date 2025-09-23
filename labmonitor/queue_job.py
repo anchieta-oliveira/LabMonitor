@@ -3,8 +3,10 @@
 # Imports
 ############################################################################################################
 
+import gc
 import os
 import time
+import sqlite3
 import smtplib
 import threading
 import pandas as pd
@@ -38,7 +40,7 @@ class QueueJob:
     - read_csv(self, path: str) -> pd.DataFrame: Reads job queue data from an csv file and returns it as a DataFrame.
     """
 
-    def __init__(self, data: Data, path: str = "queue_job.csv") -> None:
+    def __init__(self, data: Data, path: str = "database.db") -> None:
         """ Constructor for the QueueJob class.
 
         Initializes the QueueJob object with the specified Data object and csv file path.
@@ -50,13 +52,30 @@ class QueueJob:
         Returns:
         None
         """
-
-        self.df = self.read_csv(path)
+        self.conn_sql = None
+        self.connect_data(path)
+        self.df = self.read(path)
         self.path = path
         self.data = data
-        self.machines = data.machines
+        self.machines = data.machines_job
 
-    def read_csv(self, path: str = "queue_job.csv") -> pd.DataFrame:
+
+    def connect_data(self, path: str = "") -> None:
+        """
+
+        Args:
+        - path (str, optional): Path to the DB file.
+
+        Returns:
+        - None
+        """
+        if path == "":
+            path = self.path
+
+        self.conn_sql = sqlite3.connect(path, check_same_thread=False)
+
+
+    def read(self, path: str = "database.db") -> pd.DataFrame:
         """ Reads an csv file and processes its contents into a DataFrame.
         
         Parameters:
@@ -73,7 +92,8 @@ class QueueJob:
 
         if os.path.exists(path):
             try:
-                self.df = pd.read_csv(path)
+                self.df = pd.read_sql_query("SELECT * FROM job", self.conn_sql)
+                    
                 self.df['fim'] = pd.to_datetime(self.df['fim'])
                 self.df['inicio'] = pd.to_datetime(self.df['inicio'])
                 self.df['submit'] = pd.to_datetime(self.df['submit'])
@@ -81,7 +101,9 @@ class QueueJob:
                 print(f"Error reading the file {path}: {e}", flush=True)
                 backup_path = f"{os.path.splitext(path)[0]}_old{os.path.splitext(path)[1]}"
                 try:
-                    self.df = pd.read_csv(backup_path)
+                    self.connect_data(path=backup_path)
+                    self.df = pd.read_sql_query("SELECT * FROM job", self.conn_sql)
+                    
                     self.df['fim'] = pd.to_datetime(self.df['fim'])
                     self.df['inicio'] = pd.to_datetime(self.df['inicio'])
                     self.df['submit'] = pd.to_datetime(self.df['submit'])
@@ -106,17 +128,12 @@ class QueueJob:
         - Writes the contents of the DataFrame `self.df` to an csv file specified by `self.path`.
         - The file is saved without including the index.
         """
-        backup_path = f"{os.path.splitext(self.path)[0]}_old{os.path.splitext(self.path)[1]}"
-        
-        try:
-            if os.path.exists(self.path):
-                os.rename(self.path, backup_path)
 
-            self.df.to_csv(self.path, index=False)
+        try:
+            self.df.to_sql("job", self.conn_sql, if_exists='replace', index=False)
+
         except Exception as e:
             print("Error saving the file: ", e, flush=True)
-
-        
 
     def reset(self) -> pd.DataFrame:
         """ Resets the DataFrame to a default structure and saves it to an csv file.
@@ -135,7 +152,10 @@ class QueueJob:
 
         columns = ["ip", "name", "username", "job_name", "status", "pid", "path_exc", "path_origin", "machine_origin", "script_name", "submit", "inicio", "fim", "n_cpu", "taskset", "gpu_requested", "gpu_name", "gpu_index", "e-mail", "notification_start", "notification_end"]
         self.df = pd.DataFrame(columns=columns)
-        self.df.to_csv("queue_job.csv", index=False)
+        with sqlite3.connect(self.path) as conn:
+                self.df.to_sql("job", conn, if_exists='replace', index=False)
+        
+
         return self.df  
 
     def submit(self, username: str, job_name: str, machine_origin: str, script_name: str, path_origin: str, n_cpu: int, email: str, gpus: list = ['all']) -> None:
@@ -181,14 +201,15 @@ class QueueJob:
         print(self.df, flush=True)
 
     def remove(self, index:int) -> None:
-        row = self.df.loc[index]
-        row_machine = self.data.machines[self.data.machines['name'] == row['name']].iloc[0]
+        row = self.df.iloc[index]
+        row_machine = self.data.machines_job[self.data.machines_job['name'] == row['name']].iloc[0]
 
         try:
             if row['status'] == "running":
                 con = Connection(ip=row_machine['ip'], username=row_machine['username'], password=row_machine['password'])
                 con.execute_ssh_command(f"echo '{row_machine['password']}' | sudo -S sh -c 'pgid=$(ps -o pgid= -p {row['pid']}); kill -TERM -$pgid'")
-            self.df = self.df.loc[index, 'status'] = 'canceled'
+                con.ssh.close()
+            self.df.loc[index, 'status'] = 'canceled'
             self.save()
 
         except Exception as e:
@@ -231,19 +252,20 @@ class QueueJob:
                 m = Monitor(c)
             except Exception as e:
                 print(f"Error connecting to {ip}: {e}", flush=True)
-                return name, None
+                return name, {"gpu_info": []}
             try:
                 results.update(m.get_usage_gpu())
+                c.ssh.close()
             except Exception as e:
                 results.update({"gpu_info": []})
                 print(f"Error getting GPU information from {ip}: {e}", flush=True)
 
             return name, results
         
-        ips = self.data.machines['ip'].to_list()
-        names = self.data.machines['name'].to_list()
-        usernames = self.data.machines['username'].to_list()
-        passwords = self.data.machines['password'].to_list()
+        ips = self.data.machines_job['ip'].to_list()
+        names = self.data.machines_job['name'].to_list()
+        usernames = self.data.machines_job['username'].to_list()
+        passwords = self.data.machines_job['password'].to_list()
 
         results = {}
 
@@ -265,20 +287,20 @@ class QueueJob:
                 gpu_index = gpu["gpu_index"]
                 row[f"GPU_{gpu_index}_Name"] = gpu["name"]
                 sts = ""
-                if f"GPU_{gpu_index}_status" in self.data.machines.columns: 
-                    if self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_{gpu_index}_status"].iloc[0]
+                if f"GPU_{gpu_index}_status" in self.data.machines_job.columns: 
+                    if self.data.machines_job[self.data.machines_job['name'] == name][f"GPU_{gpu_index}_status"].iloc[0] != "": sts = self.data.machines_job[self.data.machines_job['name'] == name][f"GPU_{gpu_index}_status"].iloc[0]
                 row[f"GPU_{gpu_index}_status"] = sts
 
             if len(row.keys()) == 1:
                 row['GPU_0_Name'] = "Null"; row['GPU_0_status'] = ""
-                if f"GPU_0_status" in self.data.machines.columns: 
-                    if self.data.machines[self.data.machines['name'] == name][f"GPU_0_status"].iloc[0] != "": sts = self.data.machines[self.data.machines['name'] == name][f"GPU_0_status"].iloc[0]
+                if f"GPU_0_status" in self.data.machines_job.columns: 
+                    if self.data.machines_job[self.data.machines_job['name'] == name][f"GPU_0_status"].iloc[0] != "": sts = self.data.machines_job[self.data.machines_job['name'] == name][f"GPU_0_status"].iloc[0]
                 row[f"GPU_0_status"] = sts
 
             data_gpu.append(row)
 
-        self.data.machines = pd.merge(self.data.machines[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
-        self.data.save_machines()
+        self.data.machines_job = pd.merge(self.data.machines_job[['ip','name', 'username', 'password', 'status', 'allowed_cpu','cpu_used', 'name_allowed_gpu', 'path_exc']], pd.DataFrame(data_gpu), on="name")
+        self.data.save_machines_job()
 
     def __allowed_gpu(self) -> None:
         """ Updates the GPU status for each machine based on the allowed GPUs.
@@ -297,18 +319,18 @@ class QueueJob:
         - None
         """
 
-        g_names = [e.split(",") for e in self.data.machines['name_allowed_gpu'].to_list()]
-        col = self.data.machines.loc[:, self.data.machines.columns.str.contains(r"gpu_.*_name", case=False, regex=True)]
+        g_names = [e.split(",") for e in self.data.machines_job['name_allowed_gpu'].to_list()]
+        col = self.data.machines_job.loc[:, self.data.machines_job.columns.str.contains(r"gpu_.*_name", case=False, regex=True)]
 
-        for i, row in self.data.machines.iterrows():
+        for i, row in self.data.machines_job.iterrows():
             for c in col:
                 for name in g_names[i]:
-                    if name == self.data.machines[c].iloc[i]:
-                        self.data.machines.loc[i, c.replace("Name", "status")] = "available"
-                    elif name != self.data.machines[c].iloc[i]: 
-                        self.data.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
-                    elif pd.isna(self.data.machines[c].iloc[i]):
-                        self.data.machines.loc[i, c.replace("Name", "status")] = "bloqueada"
+                    if name == self.data.machines_job[c].iloc[i]:
+                        self.data.machines_job.loc[i, c.replace("Name", "status")] = "available"
+                    elif name != self.data.machines_job[c].iloc[i]: 
+                        self.data.machines_job.loc[i, c.replace("Name", "status")] = "bloqueada"
+                    elif pd.isna(self.data.machines_job[c].iloc[i]):
+                        self.data.machines_job.loc[i, c.replace("Name", "status")] = "bloqueada"
 
     def __status_in_queue(self) -> None:
         """ Updates the status of GPUs in the machines DataFrame to 'running' (executing) for jobs that are currently running.
@@ -326,10 +348,10 @@ class QueueJob:
         v = self.df[self.df['status'] == "running"]
         for i, maq in v.iterrows():
             if pd.isna(maq['gpu_index']): self.df.loc[i, ['gpu_index']] = 0; maq['gpu_index'] = 0
-            self.data.machines.loc[
-                    (self.data.machines['name'] == maq['name']) & 
-                    (self.data.machines['ip'] == maq['ip']) & 
-                    (self.data.machines[f"GPU_{int(maq['gpu_index'])}_Name"] == maq['gpu_name']),
+            self.data.machines_job.loc[
+                    (self.data.machines_job['name'] == maq['name']) & 
+                    (self.data.machines_job['ip'] == maq['ip']) & 
+                    (self.data.machines_job[f"GPU_{int(maq['gpu_index'])}_Name"] == maq['gpu_name']),
                     f"GPU_{int(maq['gpu_index'])}_status"
                 ] = "running"
      
@@ -347,11 +369,11 @@ class QueueJob:
         """
 
         v = self.df[self.df['status'] == "running"]
-        self.data.machines.loc[:,'cpu_used'] = 0
+        self.data.machines_job.loc[:,'cpu_used'] = 0
         for i, maq in v.iterrows():
-            self.data.machines.loc[
-                    (self.data.machines['name'] == maq['name']) & 
-                    (self.data.machines['ip'] == maq['ip']),
+            self.data.machines_job.loc[
+                    (self.data.machines_job['name'] == maq['name']) & 
+                    (self.data.machines_job['ip'] == maq['ip']),
                     "cpu_used"
                 ] += maq['n_cpu']
 
@@ -374,12 +396,12 @@ class QueueJob:
         - None
         """
 
-        self.data.read_machines(self.data.path_machines)
+        self.data.read_machines_job()
         self.update_gpu()
         self.__allowed_gpu()
         self.__update_cpu_used()
         self.__status_in_queue()
-        self.data.save_machines()
+        self.data.save_machines_job()
 
     def search_available_machine(self, n_cpu: int, gpu: bool = False, gpu_name: list = ["all"], cpu_reserve: bool = True, n_cpu_reserve: int = 0) -> pd.DataFrame:
         """ Searches for available machines based on CPU and GPU requirements.
@@ -399,46 +421,46 @@ class QueueJob:
         - filtered_machines (pd.DataFrame): DataFrame of available machines based on the given criteria.
         """
 
-        self.data.read_machines(self.data.path_machines)
+        self.data.read_machines_job()
     
         if cpu_reserve:
-            available_cpu = self.data.machines.loc[
+            available_cpu = self.data.machines_job.loc[
                 (
-                    ((self.data.machines['allowed_cpu'] - n_cpu_reserve) - self.data.machines['cpu_used']) >= n_cpu
+                    ((self.data.machines_job['allowed_cpu'] - n_cpu_reserve) - self.data.machines_job['cpu_used']) >= n_cpu
                 ) | (
                     (
-                        self.data.machines.loc[:, self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)]
+                        self.data.machines_job.loc[:, self.data.machines_job.columns.str.contains(r"gpu.*name", case=False, regex=True)]
                         .apply(lambda col: col.str.contains("Null", case=False, na=False))
                         .any(axis=1)
                     ) &
-                    ((self.data.machines['allowed_cpu'] - self.data.machines['cpu_used']) >= n_cpu)
+                    ((self.data.machines_job['allowed_cpu'] - self.data.machines_job['cpu_used']) >= n_cpu)
                 )
             ]
 
         else:
-            available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
+            available_cpu = self.data.machines_job.loc[(((self.data.machines_job['allowed_cpu']) - self.data.machines_job['cpu_used']) >= n_cpu)]
 
         if gpu:
             if cpu_reserve and n_cpu_reserve >= n_cpu: 
-                available_cpu = self.data.machines.loc[(((self.data.machines['allowed_cpu']) - self.data.machines['cpu_used']) >= n_cpu)]
+                available_cpu = self.data.machines_job.loc[(((self.data.machines_job['allowed_cpu']) - self.data.machines_job['cpu_used']) >= n_cpu)]
 
-            gpu_status_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
-            gpu_name_cols = self.data.machines.loc[:,self.data.machines.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
+            gpu_status_cols = self.data.machines_job.loc[:,self.data.machines_job.columns.str.contains(r"gpu.*status", case=False, regex=True)].columns
+            gpu_name_cols = self.data.machines_job.loc[:,self.data.machines_job.columns.str.contains(r"gpu.*name", case=False, regex=True)].columns
             
-            gpu_status_available = self.data.machines[gpu_status_cols].eq("available").any(axis=1)
+            gpu_status_available = self.data.machines_job[gpu_status_cols].eq("available").any(axis=1)
 
             if gpu_name[0] != "all":
-                gpu_name_match = self.data.machines[gpu_name_cols].isin(gpu_name).any(axis=1) 
+                gpu_name_match = self.data.machines_job[gpu_name_cols].isin(gpu_name).any(axis=1) 
             else:
-                gpu_name_match = self.data.machines[gpu_name_cols].any(axis=1) 
+                gpu_name_match = self.data.machines_job[gpu_name_cols].any(axis=1) 
             
             if gpu_name[0] == "all" or gpu_name != ["Null"]:
-                filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
+                filtered_machines = self.data.machines_job.loc[self.data.machines_job['name'].isin(available_cpu['name'].to_list()) &
                                                         gpu_status_available & 
                                                         gpu_name_match & 
-                                                        ~self.data.machines[gpu_name_cols].eq("Null").any(axis=1)]
+                                                        ~self.data.machines_job[gpu_name_cols].eq("Null").any(axis=1)]
             else:                 
-                filtered_machines = self.data.machines.loc[self.data.machines['name'].isin(available_cpu['name'].to_list()) &
+                filtered_machines = self.data.machines_job.loc[self.data.machines_job['name'].isin(available_cpu['name'].to_list()) &
                                                         gpu_status_available & 
                                                         gpu_name_match
                                                         ]
@@ -558,7 +580,7 @@ with open("labmonitor.status", "w") as log:
         GPU if specified. The script is saved as `run_labmonitor.py` in the directory specified by `path_exc` on the remote machine.
 
         Args:
-        - machine_name (str): The name of the machine where the job will be prepared. This name must exist in the `self.data.machines` DataFrame.
+        - machine_name (str): The name of the machine where the job will be prepared. This name must exist in the `self.data.machines_job` DataFrame.
         - taskset (list): A list of CPU cores to which the process should be bound (using `taskset` command).
         - script (str): The path to the shell script that should be executed.
         - path_exc (str): The path on the remote machine where the Python script (`run_labmonitor.py`) will be stored.
@@ -571,16 +593,17 @@ with open("labmonitor.status", "w") as log:
         - Exception: If there is an error while connecting to the machine or preparing the job, an exception is raised.
         """
 
-        row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
+        row = self.data.machines_job[self.data.machines_job['name'] == machine_name].iloc[0]
         if pd.isna(gpu_id): gpu_id = -1
         try:
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             con.execute_ssh_command(f"echo '{self.__make_script_exc(taskset, script, gpu_id)}' > {path_exc}/run_labmonitor.py")
             print(f"Preparation completed in {row['ip']} - {path_exc}", flush=True)
+            con.ssh.close()
         except Exception as e:
             print(f"Connection error when preparing work (srcipt run_labmonitor.py): {e}", flush=True)
 
-    def get_status_job(self, machine_name: str, path_exc: str) -> tuple[str, int]:
+    def get_status_job(self, machine_name: str, path_exc: str) -> tuple:
         """ Checks the status of a job running on a remote machine.
 
         This method connects to a remote machine identified by `machine_name`, retrieves the job status from a file (`labmonitor.status`),
@@ -589,7 +612,7 @@ with open("labmonitor.status", "w") as log:
         process ID (PID).
 
         Args:
-        - machine_name (str): The name of the machine where the job is running. This name must exist in the `self.data.machines` DataFrame.
+        - machine_name (str): The name of the machine where the job is running. This name must exist in the `self.data.machines_job` DataFrame.
         - path_exc (str): The path on the remote machine where the `labmonitor.status` file is located.
 
         Returns:
@@ -601,7 +624,7 @@ with open("labmonitor.status", "w") as log:
         - Exception: If there is an error while connecting to the machine or retrieving the job status, an exception is raised.
         """
 
-        row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
+        row = self.data.machines_job[self.data.machines_job['name'] == machine_name].iloc[0]
 
         try:
             print(f"Checking job status in {row['ip']}")
@@ -625,7 +648,7 @@ with open("labmonitor.status", "w") as log:
         of the running job from the `labmonitor.status` file, and returns the PID. If an error occurs, the method returns `-1`.
 
         Args:
-        - machine_name (str): The name of the machine where the job should be started. This name must exist in the `self.data.machines` DataFrame.
+        - machine_name (str): The name of the machine where the job should be started. This name must exist in the `self.data.machines_job` DataFrame.
         - path_exc (str): The path on the remote machine where the `run_labmonitor.py` script is located and should be executed from.
 
         Returns:
@@ -635,14 +658,15 @@ with open("labmonitor.status", "w") as log:
         - Exception: If there is an error while connecting to the machine, executing the script, or retrieving the job PID, an exception is raised.
         """
 
-        row = self.data.machines[self.data.machines['name'] == machine_name].iloc[0]
+        row = self.data.machines_job[self.data.machines_job['name'] == machine_name].iloc[0]
 
         try:
             print(f"Starting work in {row['ip']}", flush=True)
 
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             ch = con.ssh.get_transport().open_session()
-            ch.exec_command(f"cd {path_exc} && nohup python3 run_labmonitor.py >  run_labmonitor.log &")
+            cmd = f"bash -i -l -c 'cd {path_exc} && nohup python3 run_labmonitor.py > run_labmonitor.log 2>&1 &'"
+            ch.exec_command(cmd)
 
             time.sleep(1)
             _, pid = con.execute_ssh_command(f"cat {path_exc}/labmonitor.status").split("-")
@@ -663,7 +687,7 @@ with open("labmonitor.status", "w") as log:
         it returns `False` and prints an error message.
 
         Args:
-        - machine_exc (str): The name of the machine where the directory should be created. This name must exist in the `self.data.machines` DataFrame.
+        - machine_exc (str): The name of the machine where the directory should be created. This name must exist in the `self.data.machines_job` DataFrame.
         - dir_exc (str): The path to the directory that should be created on the remote machine.
 
         Returns:
@@ -673,12 +697,13 @@ with open("labmonitor.status", "w") as log:
         - Exception: If there is an error while connecting to the machine or creating the directory, an exception is raised.
         """
 
-        row = self.data.machines[self.data.machines['name'] == machine_exc].iloc[0]
+        row = self.data.machines_job[self.data.machines_job['name'] == machine_exc].iloc[0]
         try:
             print(f"Connecting to {row['ip']}...", flush=True)
             con = Connection(ip=row['ip'], username=row['username'], password=row['password'])
             con.execute_ssh_command(f"mkdir {dir_exc}")
             print(f"mkdir {dir_exc}", flush=True)
+            con.ssh.close()
             return True
         except Exception as e:
             print(f"Error connecting to create dir_exec {row['ip']}: {e}", flush=True)
@@ -702,7 +727,7 @@ with open("labmonitor.status", "w") as log:
         result_task = []
         task = self.df.loc[(self.df['name'] == machine_name) & (self.df['status'] == 'running'), 'taskset']
         all_task = [int(num) for t in task if isinstance(t, str) for num in t.split(',')]
-        available_cpu = self.data.machines.loc[self.data.machines['name'] == machine_name, 'allowed_cpu'].iloc[0]
+        available_cpu = self.data.machines_job.loc[self.data.machines_job['name'] == machine_name, 'allowed_cpu'].iloc[0]
         cpu_add = 0
         
         for t in range(int(available_cpu)):
@@ -804,7 +829,9 @@ with open("labmonitor.status", "w") as log:
         """
 
         n_cpu = self.df.loc[index, 'n_cpu']
-        gpu = not pd.isna(self.df.loc[index, 'gpu_requested'])
+        
+        gpu = not (pd.isna(self.df.loc[index, 'gpu_requested']) or str(self.df.loc[index, 'gpu_requested']).strip() == '')
+        
         if gpu:
             gpu_name = self.df.loc[index, 'gpu_requested'].split(",")
         else:
@@ -830,7 +857,7 @@ with open("labmonitor.status", "w") as log:
             #if pd.isna(self.df.loc[index, 'cpu_start']): self.df.loc[index, 'cpu_start'] = 0
 
             # Atualziar CPUs ocupadas nas maquinas 
-            self.data.machines.loc[self.data.machines['name'] == machine['name'], 'cpu_used'] += n_cpu
+            self.data.machines_job.loc[self.data.machines_job['name'] == machine['name'], 'cpu_used'] += n_cpu
 
             if gpu:
                 # Pegar GPU e Index na fila de trabalho
@@ -841,7 +868,7 @@ with open("labmonitor.status", "w") as log:
                     if "available" == machine[s] and (machine[n] in gpu_name or "all" in gpu_name):
                         self.df.loc[index, ['gpu_name', 'gpu_index']] = (machine[n], gpu_index)
                         # Atualizar status da GPU nas maquinas
-                        self.data.machines.loc[self.data.machines['name'] == machine['name'], s] = "running"
+                        self.data.machines_job.loc[self.data.machines_job['name'] == machine['name'], s] = "running"
             
             # Criar pasta na maquina exc com username_datasubmit
             self.__make_dir_exc(machine_exc=machine['name'], dir_exc=f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/")
@@ -850,16 +877,15 @@ with open("labmonitor.status", "w") as log:
             self.df.loc[index, ['path_exc']] = f"{machine['path_exc']}/{self.df.loc[index, 'username']}_{self.df.loc[index, 'submit'].strftime('%m_%d_%Y_%I-%M-%S')}/{os.path.basename(os.path.normpath(self.df.loc[index, 'path_origin']))}/"
     
             # Copiar arquivos 
-            data_machines_origin = Data(); data_machines_origin.read_machines()
             
-            self.copy_dir(ip_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
-                          username_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
-                          password_origin=data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
+            self.copy_dir(ip_origin=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
+                          username_origin=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
+                          password_origin=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
                           path_origin=self.df.loc[index, 'path_origin'],
                           
-                          ip_exc=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0],
-                          username_exc=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'username'].iloc[0],
-                          password_exc=self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'password'].iloc[0],
+                          ip_exc=self.data.machines_job.loc[self.data.machines_job['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0],
+                          username_exc=self.data.machines_job.loc[self.data.machines_job['name'] == self.df.loc[index, 'name'], 'username'].iloc[0],
+                          password_exc=self.data.machines_job.loc[self.data.machines_job['name'] == self.df.loc[index, 'name'], 'password'].iloc[0],
                           path_exc=self.df.loc[index, 'path_exc']
                           )
 
@@ -884,7 +910,7 @@ with open("labmonitor.status", "w") as log:
                                 subtype="html"):
                     self.df.loc[index, 'notification_start'] = "Y"
             
-            self.data.save_machines() 
+            self.data.save_machines_job() 
             self.save()
             
     def __copy_finished(self, index: int) -> None:
@@ -907,10 +933,9 @@ with open("labmonitor.status", "w") as log:
             - None.
             """
 
-            data_machines_origin = Data(); data_machines_origin.read_machines()
-            ip_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0]
-            username_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'username'].iloc[0]
-            password_exc = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'name'], 'password'].iloc[0]
+            ip_exc = self.data.machines_job.loc[self.data.machines_job['name'] == self.df.loc[index, 'name'], 'ip'].iloc[0]
+            username_exc = self.data.machines_job.loc[self.data.machines_job['name'] == self.df.loc[index, 'name'], 'username'].iloc[0]
+            password_exc = self.data.machines_job.loc[self.data.machines_job['name'] == self.df.loc[index, 'name'], 'password'].iloc[0]
             path_exc = self.df.loc[index, 'path_exc']
             copiar = False
             copiado = False
@@ -932,9 +957,9 @@ with open("labmonitor.status", "w") as log:
             if copiar:
                 try:
                     self.copy_dir(
-                        ip_origin = data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
-                        username_origin = data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
-                        password_origin = data_machines_origin.machines.loc[data_machines_origin.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
+                        ip_origin = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'machine_origin'], 'ip'].iloc[0],
+                        username_origin = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'machine_origin'], 'username'].iloc[0],
+                        password_origin = self.data.machines.loc[self.data.machines['name'] == self.df.loc[index, 'machine_origin'], 'password'].iloc[0],
                         path_origin = self.df.loc[index, 'path_origin'],
                         ip_exc = ip_exc,
                         username_exc = username_exc,
@@ -949,12 +974,12 @@ with open("labmonitor.status", "w") as log:
             
             if copiado:
                 cmd = f"echo 'finished - {pid}' > {path_exc}/labmonitor.status"
-                self.read_csv()
+                self.read()
                 self.df.loc[index, ['status']] = 'finished'; self.save()
                 self.__finished(index)
                 
             else:
-                self.read_csv()
+                self.read()
                 cmd = f"echo 'copy_fail - {pid}' > {path_exc}/labmonitor.status"
                 self.df.loc[index, ['status']] = 'copy_fail'; self.save()
             try:
@@ -984,7 +1009,7 @@ with open("labmonitor.status", "w") as log:
         - dict: A dictionary where the keys are log file names and the values are the corresponding log contents.
         """
 
-        machine = self.data.machines[self.data.machines['name'] == job_row['name']].iloc[0]
+        machine = self.data.machines_job[self.data.machines_job['name'] == job_row['name']].iloc[0]
 
         try:
             print(f"Connecting to {machine['ip']}...", flush=True)
@@ -996,6 +1021,7 @@ with open("labmonitor.status", "w") as log:
                 l = log.split("<==") + ["", ""]
                 r.update({l[0].split('/')[-1]: l[1]})
             del r['']
+            con.ssh.close()
             return r 
 
         except Exception as e:
@@ -1106,7 +1132,7 @@ with open("labmonitor.status", "w") as log:
                     self.df.loc[index, 'notification_end'] = "Y"
                 
                 self.__copy_finished(index)
-                self.read_csv()
+                self.read()
                 self.df.loc[index, 'status'] = "not_finished_correctly" 
                 
         send()
@@ -1162,13 +1188,14 @@ with open("labmonitor.status", "w") as log:
                   "copying":self.__copying,
                   "copy_fail": self.__copy_fail,
                   "started": self.__started,
+                  "canceled": self.__canceled,
                   "": self.__nenhum
                   }
         
         try: self.data.read_users()
         except Exception as e: print(f"Error updating user limits: {e}", flush=True)
 
-        try: self.read_csv()
+        try: self.read()
         except Exception as e: print(f"Error updating data jobs:", flush=True)
 
         try: self.update_status_machines()
@@ -1211,8 +1238,12 @@ with open("labmonitor.status", "w") as log:
 
             self.__monitor_now()
             
+            
             print(f"Monitoring end: {datetime.now()}", flush=True)
+            
             time.sleep(feq_time)
+            
+
         else:
             self.__monitor_now()
 
@@ -1365,8 +1396,8 @@ with open("labmonitor.status", "w") as log:
             msg = MIMEMultipart()
             # setup the parameters of the message
             self.data.read_email()
-            password = self.data.email['password'] # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
-            msg['From'] = self.data.email['address'] 
+            password = self.data.email['password'].iloc[0] # a senha tem que ser gerada https://www.emailsupport.us/blog/gmail-smtp-not-working/
+            msg['From'] = self.data.email['address'].iloc[0] 
             msg['To'] = to
             msg['Subject'] = subject
             
